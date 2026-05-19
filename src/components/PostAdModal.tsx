@@ -1,0 +1,803 @@
+import { useState, useRef, useEffect } from 'react';
+import {
+  X, Building2, User, MapPin, DollarSign, FileText,
+  CheckCircle2, ChevronRight, ChevronLeft, CreditCard,
+  Calendar, ShieldCheck, Star, Briefcase, Plus, Trash2,
+  Clock
+} from 'lucide-react';
+import { categoryLabels } from '../data/mockData';
+import { useTheme } from '../context/ThemeContext';
+
+const ALL_CITIES = [
+  'Toronto, ON', 'Vancouver, BC', 'Montreal, QC', 'Calgary, AB', 'Edmonton, AB',
+  'Ottawa, ON', 'Winnipeg, MB', 'Quebec City, QC', 'Hamilton, ON', 'Kitchener, ON',
+  'London, ON', 'Halifax, NS', 'New York, NY', 'Los Angeles, CA', 'Chicago, IL',
+  'Houston, TX', 'San Francisco, CA', 'Seattle, WA', 'Miami, FL', 'Boston, MA',
+  'Dallas, TX', 'Atlanta, GA', 'Denver, CO', 'Phoenix, AZ', 'Austin, TX',
+  'San Diego, CA', 'Philadelphia, PA', 'San Jose, CA', 'Jacksonville, FL',
+  'Columbus, OH', 'Charlotte, NC', 'Indianapolis, IN', 'Fort Worth, TX',
+  'Detroit, MI', 'El Paso, TX', 'Memphis, TN', 'Louisville, KY',
+  'Milwaukee, WI', 'Baltimore, MD', 'Albuquerque, NM', 'Tucson, AZ',
+  'Fresno, CA', 'Sacramento, CA', 'Kansas City, MO', 'Mesa, AZ', 'Omaha, NE',
+  'Colorado Springs, CO', 'Raleigh, NC', 'Virginia Beach, VA', 'Oakland, CA',
+  'Minneapolis, MN', 'Tulsa, OK', 'Arlington, TX', 'Wichita, KS', 'Bakersfield, CA',
+];
+
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const EXPERIENCE_YEARS = ['Less than 1 year', '1 year', '2 years', '3 years', '4 years', '5 years', '6 years', '7 years', '8 years', '9 years', '10+ years'];
+
+const HIRING_PLANS = [
+  { id: '1m', label: '1 Month', price: 29, duration: '30 days', popular: false },
+  { id: '2m', label: '2 Months', price: 49, duration: '60 days', popular: true },
+  { id: '3m', label: '3 Months', price: 69, duration: '90 days', popular: false },
+];
+
+const SEEKER_PLANS = [
+  { id: '1m', label: '1 Month', price: 19, duration: '30 days', popular: false },
+  { id: '2m', label: '2 Months', price: 35, duration: '60 days', popular: true },
+  { id: '3m', label: '3 Months', price: 49, duration: '90 days', popular: false },
+];
+
+interface Reference {
+  id: string;
+  name: string;
+  phone: string;
+}
+
+interface PostAdModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
+  const [adType, setAdType] = useState<'family' | 'seeker' | null>(null);
+  const [step, setStep] = useState(1);
+  const [submitted, setSubmitted] = useState(false);
+  const { isDark } = useTheme();
+
+  // ===== HIRING FORM STATE =====
+  const [hTitle, setHTitle] = useState('');
+  const [hCategory, setHCategory] = useState('');
+  const [hLocationQuery, setHLocationQuery] = useState('');
+  const [hLocationFocused, setHLocationFocused] = useState(false);
+  const [hSelectedLocation, setHSelectedLocation] = useState('');
+  const [hSalary, setHSalary] = useState('');
+  const [hScheduleDays, setHScheduleDays] = useState<Record<string, { active: boolean; start: string; end: string }>>({
+    Mon: { active: false, start: '09:00', end: '17:00' },
+    Tue: { active: false, start: '09:00', end: '17:00' },
+    Wed: { active: false, start: '09:00', end: '17:00' },
+    Thu: { active: false, start: '09:00', end: '17:00' },
+    Fri: { active: false, start: '09:00', end: '17:00' },
+    Sat: { active: false, start: '09:00', end: '17:00' },
+    Sun: { active: false, start: '09:00', end: '17:00' },
+  });
+  const [hDescription, setHDescription] = useState('');
+  const [hSelectedPlan, setHSelectedPlan] = useState('');
+  const [hCardNumber, setHCardNumber] = useState('');
+  const [hCardExpiry, setHCardExpiry] = useState('');
+  const [hCardCvc, setHCardCvc] = useState('');
+  const [hCardName, setHCardName] = useState('');
+
+  // ===== SEEKER FORM STATE =====
+  const [sCategory, setSCategory] = useState('');
+  const [sBio, setSBio] = useState('');
+  const [sExperience, setSExperience] = useState('');
+  const [sReferences, setSReferences] = useState<Reference[]>([{ id: '1', name: '', phone: '' }]);
+  const [sLocationQuery, setSLocationQuery] = useState('');
+  const [sLocationFocused, setSLocationFocused] = useState(false);
+  const [sSelectedLocation, setSSelectedLocation] = useState('');
+  const [sSalary, setSSalary] = useState('');
+  const [sScheduleDays, setSScheduleDays] = useState<Record<string, { active: boolean; start: string; end: string }>>({
+    Mon: { active: false, start: '09:00', end: '17:00' },
+    Tue: { active: false, start: '09:00', end: '17:00' },
+    Wed: { active: false, start: '09:00', end: '17:00' },
+    Thu: { active: false, start: '09:00', end: '17:00' },
+    Fri: { active: false, start: '09:00', end: '17:00' },
+    Sat: { active: false, start: '09:00', end: '17:00' },
+    Sun: { active: false, start: '09:00', end: '17:00' },
+  });
+  const [sTerm, setSTerm] = useState('');
+  const [sSelectedPlan, setSSelectedPlan] = useState('');
+  const [sCardNumber, setSCardNumber] = useState('');
+  const [sCardExpiry, setSCardExpiry] = useState('');
+  const [sCardCvc, setSCardCvc] = useState('');
+  const [sCardName, setSCardName] = useState('');
+
+  const hLocationRef = useRef<HTMLDivElement>(null);
+  const sLocationRef = useRef<HTMLDivElement>(null);
+
+  const hiringSteps = 7;
+  const seekerSteps = 9;
+  const totalSteps = adType === 'family' ? hiringSteps : seekerSteps;
+
+  useEffect(() => {
+    if (isOpen) {
+      setAdType(null);
+      setStep(1);
+      setSubmitted(false);
+      resetAllForms();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (hLocationRef.current && !hLocationRef.current.contains(e.target as Node)) {
+        setHLocationFocused(false);
+      }
+      if (sLocationRef.current && !sLocationRef.current.contains(e.target as Node)) {
+        setSLocationFocused(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+    return undefined;
+  }, [isOpen]);
+
+  const resetAllForms = () => {
+    // Hiring
+    setHTitle(''); setHCategory(''); setHLocationQuery(''); setHSelectedLocation(''); setHSalary('');
+    setHScheduleDays({ Mon: { active: false, start: '09:00', end: '17:00' }, Tue: { active: false, start: '09:00', end: '17:00' }, Wed: { active: false, start: '09:00', end: '17:00' }, Thu: { active: false, start: '09:00', end: '17:00' }, Fri: { active: false, start: '09:00', end: '17:00' }, Sat: { active: false, start: '09:00', end: '17:00' }, Sun: { active: false, start: '09:00', end: '17:00' } });
+    setHDescription(''); setHSelectedPlan(''); setHCardNumber(''); setHCardExpiry(''); setHCardCvc(''); setHCardName('');
+    // Seeker
+    setSCategory(''); setSBio(''); setSExperience(''); setSReferences([{ id: '1', name: '', phone: '' }]);
+    setSLocationQuery(''); setSSelectedLocation(''); setSSalary('');
+    setSScheduleDays({ Mon: { active: false, start: '09:00', end: '17:00' }, Tue: { active: false, start: '09:00', end: '17:00' }, Wed: { active: false, start: '09:00', end: '17:00' }, Thu: { active: false, start: '09:00', end: '17:00' }, Fri: { active: false, start: '09:00', end: '17:00' }, Sat: { active: false, start: '09:00', end: '17:00' }, Sun: { active: false, start: '09:00', end: '17:00' } });
+    setSTerm(''); setSSelectedPlan(''); setSCardNumber(''); setSCardExpiry(''); setSCardCvc(''); setSCardName('');
+  };
+
+  if (!isOpen) return null;
+
+  const categories = Object.entries(categoryLabels).map(([key, label]) => ({ key, label }));
+
+  const hFilteredCities = ALL_CITIES.filter((city) => city.toLowerCase().includes(hLocationQuery.toLowerCase().trim()));
+  const sFilteredCities = ALL_CITIES.filter((city) => city.toLowerCase().includes(sLocationQuery.toLowerCase().trim()));
+
+  const handleSelectCity = (type: 'h' | 's', city: string) => {
+    if (type === 'h') { setHSelectedLocation(city); setHLocationQuery(city); setHLocationFocused(false); }
+    else { setSSelectedLocation(city); setSLocationQuery(city); setSLocationFocused(false); }
+  };
+
+  const toggleDay = (type: 'h' | 's', day: string) => {
+    const setter = type === 'h' ? setHScheduleDays : setSScheduleDays;
+    setter((prev) => ({ ...prev, [day]: { ...prev[day], active: !prev[day].active } }));
+  };
+
+  const updateDayTime = (type: 'h' | 's', day: string, field: 'start' | 'end', value: string) => {
+    const setter = type === 'h' ? setHScheduleDays : setSScheduleDays;
+    setter((prev) => ({ ...prev, [day]: { ...prev[day], [field]: value } }));
+  };
+
+  const addReference = () => {
+    setSReferences((prev) => [...prev, { id: Date.now().toString(), name: '', phone: '' }]);
+  };
+
+  const removeReference = (id: string) => {
+    setSReferences((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  const updateReference = (id: string, field: 'name' | 'phone', value: string) => {
+    setSReferences((prev) => prev.map((r) => r.id === id ? { ...r, [field]: value } : r));
+  };
+
+  const canProceed = () => {
+    if (adType === 'family') {
+      switch (step) {
+        case 1: return hTitle.trim() && hCategory;
+        case 2: return hSelectedLocation && hSalary.trim();
+        case 3: return Object.values(hScheduleDays).some((d) => d.active);
+        case 4: return hDescription.trim().length > 20;
+        case 5: return hSelectedPlan;
+        case 6: return hCardNumber.length >= 16 && hCardExpiry && hCardCvc.length >= 3 && hCardName.trim();
+        default: return true;
+      }
+    } else {
+      switch (step) {
+        case 1: return sCategory;
+        case 2: return sBio.trim().length > 20;
+        case 3: return sExperience && sReferences.some((r) => r.name.trim() && r.phone.trim());
+        case 4: return sSelectedLocation && sSalary.trim();
+        case 5: return Object.values(sScheduleDays).some((d) => d.active);
+        case 6: return sTerm;
+        case 7: return sSelectedPlan;
+        case 8: return sCardNumber.length >= 16 && sCardExpiry && sCardCvc.length >= 3 && sCardName.trim();
+        default: return true;
+      }
+    }
+  };
+
+  const handleNext = () => { if (step < totalSteps) setStep(step + 1); };
+  const handleBack = () => { if (step > 1) setStep(step - 1); };
+
+  const handleSubmit = () => {
+    if (adType === 'family') {
+      setSubmitted(true);
+      setTimeout(() => {
+        setSubmitted(false);
+        setAdType(null);
+        setStep(1);
+        resetAllForms();
+        onClose();
+      }, 3000);
+    } else {
+      // Seeker: show success screen via submitted flag, then auto-close
+      setSubmitted(true);
+      setStep(9);
+      setTimeout(() => {
+        setSubmitted(false);
+        setAdType(null);
+        setStep(1);
+        resetAllForms();
+        onClose();
+      }, 3000);
+    }
+  };
+
+  const hShowDropdown = hLocationFocused && hLocationQuery.trim().length > 0;
+  const sShowDropdown = sLocationFocused && sLocationQuery.trim().length > 0;
+
+  const inputClass = `w-full px-4 py-3 border rounded-xl text-sm placeholder:text-opacity-60 ${
+    isDark ? 'bg-void border-void-border text-ink placeholder:text-ink-muted' : 'bg-light-bg border-light-border text-light-text placeholder:text-light-text-muted'
+  }`;
+  const labelClass = `block text-sm font-medium mb-1.5 ${isDark ? 'text-ink' : 'text-light-text'}`;
+
+  const hiringStepTitles = ['', 'Job Title & Category', 'Location & Salary', 'Schedule', 'Description', 'Choose a Plan', 'Payment', 'Success'];
+  const seekerStepTitles = ['', 'Work Category', 'About You', 'Experience & References', 'Location & Pay', 'Availability', 'Job Term', 'Choose a Plan', 'Payment', 'Success'];
+  const stepTitles = adType === 'family' ? hiringStepTitles : seekerStepTitles;
+
+  const currentPlan = adType === 'family'
+    ? HIRING_PLANS.find((p) => p.id === hSelectedPlan)
+    : SEEKER_PLANS.find((p) => p.id === sSelectedPlan);
+
+  // ===== RENDER HELPERS =====
+  const renderStepper = () => (
+    <div className={`px-6 pt-4 pb-2 flex items-center gap-1.5 ${isDark ? 'bg-void-light' : 'bg-white'}`}>
+      {Array.from({ length: totalSteps }, (_, i) => i + 1).map((s) => (
+        <div key={s} className="flex items-center gap-1.5 flex-1">
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+            s < step ? 'bg-emerald text-white' : s === step ? 'bg-gradient-to-r from-maroon to-gold text-white' : isDark ? 'bg-void-lighter text-ink-muted border border-void-border' : 'bg-light-surface-2 text-light-text-muted border border-light-border'
+          }`}>
+            {s < step ? <CheckCircle2 className="w-4 h-4" /> : s}
+          </div>
+          {s < totalSteps && (
+            <div className={`flex-1 h-0.5 rounded-full ${s < step ? 'bg-emerald' : isDark ? 'bg-void-border' : 'bg-light-border'}`} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+
+  const renderNavButtons = () => (
+    <div className="flex gap-3 pt-4 mt-2">
+      <button
+        type="button"
+        onClick={step > 1 ? handleBack : () => setAdType(null)}
+        className={`flex items-center justify-center gap-2 px-5 py-3 border rounded-full text-sm font-medium transition-colors ${
+          isDark ? 'bg-void border-void-border text-ink hover:bg-void-lighter' : 'bg-light-bg border-light-border text-light-text hover:bg-light-surface-2'
+        }`}
+      >
+        <ChevronLeft className="w-4 h-4" />
+        Back
+      </button>
+      {step < totalSteps && !(adType === 'seeker' && step === 8) ? (
+        <button
+          type="button"
+          onClick={handleNext}
+          disabled={!canProceed()}
+          className={`flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-full text-sm font-medium transition-opacity btn-press ${
+            canProceed() ? 'bg-gradient-to-r from-maroon to-gold text-white shadow-lg shadow-maroon/20 hover:opacity-90' : 'bg-void-lighter text-ink-muted cursor-not-allowed'
+          }`}
+        >
+          Next
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={!canProceed()}
+          className={`flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-full text-sm font-medium transition-opacity btn-press ${
+            canProceed() ? 'bg-gradient-to-r from-maroon to-gold text-white shadow-lg shadow-maroon/20 hover:opacity-90' : 'bg-void-lighter text-ink-muted cursor-not-allowed'
+          }`}
+        >
+          Pay &amp; Post Ad
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-void/60 modal-backdrop" onClick={onClose} />
+
+      <div className={`relative rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border ${
+        isDark ? 'bg-void-light border-void-border' : 'bg-white border-light-border'
+      }`}>
+        {/* Header */}
+        <div className={`sticky top-0 border-b px-6 py-4 flex items-center justify-between z-10 ${
+          isDark ? 'bg-void-light border-void-border' : 'bg-white border-light-border'
+        }`}>
+          <div>
+            <h3 className={`font-display text-xl font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>
+              {adType === null ? 'Post an Ad' : adType === 'family' ? 'Hire a Caregiver' : 'Find a Job'}
+            </h3>
+            {adType !== null && !submitted && (
+              <div className={`text-xs mt-0.5 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
+                Step {step} of {totalSteps} — {stepTitles[step]}
+              </div>
+            )}
+          </div>
+          <button onClick={onClose} className={`p-1 rounded-lg transition-colors ${isDark ? 'hover:bg-void-lighter' : 'hover:bg-light-surface-2'}`}>
+            <X className={`w-5 h-5 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+          </button>
+        </div>
+
+        {adType !== null && !submitted && renderStepper()}
+
+        <div className="p-6">
+          {/* ===== LANDING SCREEN ===== */}
+          {adType === null ? (
+            <div className="space-y-4">
+              <p className={isDark ? 'text-ink-muted text-sm mb-6' : 'text-light-text-muted text-sm mb-6'}>
+                What would you like to do?
+              </p>
+              {/* Hiring */}
+              <button
+                onClick={() => { setAdType('family'); setStep(1); }}
+                className={`w-full flex items-center gap-4 p-5 rounded-2xl border transition-all text-left group ${
+                  isDark ? 'bg-void border-void-border hover:border-emerald/40 hover:bg-emerald/5' : 'bg-light-bg border-light-border hover:border-emerald/30 hover:bg-emerald/5'
+                }`}
+              >
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform border ${
+                  isDark ? 'bg-gradient-to-br from-emerald/20 to-teal/20 border-emerald/20' : 'bg-gradient-to-br from-emerald/10 to-teal/10 border-emerald/10'
+                }`}>
+                  <Building2 className="w-6 h-6 text-emerald" />
+                </div>
+                <div>
+                  <div className={`font-display text-lg font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>I am hiring</div>
+                  <div className={isDark ? 'text-sm text-ink-muted' : 'text-sm text-light-text-muted'}>Post a job for families looking for caregivers</div>
+                </div>
+              </button>
+
+              {/* Seeking */}
+              <button
+                onClick={() => { setAdType('seeker'); setStep(1); }}
+                className={`w-full flex items-center gap-4 p-5 rounded-2xl border transition-all text-left group ${
+                  isDark ? 'bg-void border-void-border hover:border-gold/40 hover:bg-gold/5' : 'bg-light-bg border-light-border hover:border-gold/30 hover:bg-gold/5'
+                }`}
+              >
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform border ${
+                  isDark ? 'bg-gradient-to-br from-gold/20 to-saffron/20 border-gold/20' : 'bg-gradient-to-br from-gold/10 to-saffron/10 border-gold/10'
+                }`}>
+                  <Briefcase className="w-6 h-6 text-gold" />
+                </div>
+                <div>
+                  <div className={`font-display text-lg font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>I am looking for work</div>
+                  <div className={isDark ? 'text-sm text-ink-muted' : 'text-sm text-light-text-muted'}>Create a profile to showcase your skills to families</div>
+                </div>
+              </button>
+            </div>
+          ) : submitted ? (
+            /* ===== SUCCESS ===== */
+            <div className="text-center py-10">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald to-teal flex items-center justify-center mx-auto mb-6">
+                <CheckCircle2 className="w-10 h-10 text-white" />
+              </div>
+              <h4 className={`font-display text-2xl font-semibold mb-2 ${isDark ? 'text-ink' : 'text-light-text'}`}>Payment Successful!</h4>
+              <p className={`mb-2 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Your ad is now active and visible.</p>
+              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm mt-4 ${isDark ? 'bg-emerald/10 text-emerald' : 'bg-emerald/5 text-emerald'}`}>
+                <ShieldCheck className="w-4 h-4" />
+                Ad live for {currentPlan?.duration}
+              </div>
+            </div>
+          ) : adType === 'family' ? (
+            /* ===== HIRING WIZARD (7 steps) ===== */
+            <>
+              {/* Step 1: Title & Category */}
+              {step === 1 && (
+                <div className="space-y-5">
+                  <div>
+                    <label className={labelClass}>Job Title</label>
+                    <input type="text" value={hTitle} onChange={(e) => setHTitle(e.target.value)} placeholder="e.g. Full-Time Nanny Needed" className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Category</label>
+                    <div className="grid grid-cols-1 gap-2">
+                      {categories.map((c) => (
+                        <button key={c.key} type="button" onClick={() => setHCategory(c.key)}
+                          className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium transition-all text-left ${
+                            hCategory === c.key ? 'bg-gold/10 border-gold text-gold' : isDark ? 'bg-void border-void-border text-ink-light hover:border-ink-muted' : 'bg-light-bg border-light-border text-light-text-2 hover:border-light-text-muted'
+                          }`}
+                        >
+                          <div className={`w-2 h-2 rounded-full ${c.key === 'nanny' ? 'bg-accent-nanny' : c.key === 'eldercare' ? 'bg-accent-elder' : c.key === 'cook' ? 'bg-accent-cook' : c.key === 'housekeeper' ? 'bg-accent-house' : 'bg-accent-clean'}`} />
+                          {c.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {renderNavButtons()}
+                </div>
+              )}
+
+              {/* Step 2: Location & Salary */}
+              {step === 2 && (
+                <div className="space-y-5">
+                  <div className="relative" ref={hLocationRef}>
+                    <label className={labelClass}>Location</label>
+                    <div className="relative">
+                      <MapPin className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+                      <input type="text" value={hLocationQuery} onChange={(e) => { setHLocationQuery(e.target.value); setHSelectedLocation(''); }} onFocus={() => setHLocationFocused(true)} placeholder="Search city..."
+                        className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm ${isDark ? 'bg-void border-void-border text-ink placeholder:text-ink-muted' : 'bg-light-bg border-light-border text-light-text placeholder:text-light-text-muted'}`}
+                      />
+                    </div>
+                    {hShowDropdown && (
+                      <div className={`absolute z-50 left-0 right-0 mt-1 rounded-xl border shadow-xl max-h-48 overflow-y-auto ${isDark ? 'bg-void-light border-void-border' : 'bg-white border-light-border'}`}>
+                        {hFilteredCities.length === 0 ? (
+                          <div className={`px-4 py-3 text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>No cities found.</div>
+                        ) : (
+                          hFilteredCities.map((city) => (
+                            <button key={city} type="button" onClick={() => handleSelectCity('h', city)}
+                              className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2 ${hSelectedLocation === city ? (isDark ? 'text-gold bg-gold/10' : 'text-maroon bg-maroon/10') : (isDark ? 'text-ink-light hover:text-ink hover:bg-void-lighter' : 'text-light-text-2 hover:text-light-text hover:bg-light-surface-2')}`}
+                            >
+                              <MapPin className={`w-3.5 h-3.5 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+                              {city}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className={labelClass}>Salary / Rate (per hour)</label>
+                    <div className="relative">
+                      <DollarSign className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+                      <input type="text" value={hSalary} onChange={(e) => setHSalary(e.target.value)} placeholder="e.g. $25/hr" className={inputClass} />
+                    </div>
+                  </div>
+                  {renderNavButtons()}
+                </div>
+              )}
+
+              {/* Step 3: Schedule */}
+              {step === 3 && (
+                <div className="space-y-3">
+                  <p className={`text-sm mb-2 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Select the days you need care and set the hours.</p>
+                  {DAYS.map((day) => (
+                    <div key={day} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${hScheduleDays[day].active ? (isDark ? 'bg-gold/5 border-gold/30' : 'bg-gold/5 border-gold/20') : (isDark ? 'bg-void border-void-border' : 'bg-light-bg border-light-border')}`}>
+                      <button type="button" onClick={() => toggleDay('h', day)} className={`w-10 h-10 rounded-lg text-sm font-bold transition-all shrink-0 ${hScheduleDays[day].active ? 'bg-gradient-to-r from-maroon to-gold text-white shadow-md' : (isDark ? 'bg-void-lighter text-ink-muted' : 'bg-light-surface-2 text-light-text-muted')}`}>{day}</button>
+                      {hScheduleDays[day].active ? (
+                        <>
+                          <input type="time" value={hScheduleDays[day].start} onChange={(e) => updateDayTime('h', day, 'start', e.target.value)} className={`px-2 py-1.5 rounded-lg text-sm border ${isDark ? 'bg-void border-void-border text-ink' : 'bg-white border-light-border text-light-text'}`} />
+                          <span className={`text-sm shrink-0 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>to</span>
+                          <input type="time" value={hScheduleDays[day].end} onChange={(e) => updateDayTime('h', day, 'end', e.target.value)} className={`px-2 py-1.5 rounded-lg text-sm border ${isDark ? 'bg-void border-void-border text-ink' : 'bg-white border-light-border text-light-text'}`} />
+                        </>
+                      ) : (
+                        <span className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Not selected</span>
+                      )}
+                    </div>
+                  ))}
+                  {renderNavButtons()}
+                </div>
+              )}
+
+              {/* Step 4: Description */}
+              {step === 4 && (
+                <div className="space-y-4">
+                  <div>
+                    <label className={labelClass}>Job Description</label>
+                    <div className="relative">
+                      <FileText className={`absolute left-3 top-3.5 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+                      <textarea value={hDescription} onChange={(e) => setHDescription(e.target.value)} rows={6} placeholder="Describe the role, responsibilities, and what you are looking for..."
+                        className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm resize-none placeholder:text-opacity-60 ${isDark ? 'bg-void border-void-border text-ink placeholder:text-ink-muted' : 'bg-light-bg border-light-border text-light-text placeholder:text-light-text-muted'}`}
+                      />
+                    </div>
+                    <div className={`text-xs mt-1.5 text-right ${hDescription.length < 20 ? 'text-red-400' : (isDark ? 'text-ink-muted' : 'text-light-text-muted')}`}>{hDescription.length} characters (min 20)</div>
+                  </div>
+                  {renderNavButtons()}
+                </div>
+              )}
+
+              {/* Step 5: Plans */}
+              {step === 5 && (
+                <div className="space-y-4">
+                  <p className={`text-sm mb-2 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Choose how long you want your ad to stay active.</p>
+                  {HIRING_PLANS.map((plan) => (
+                    <button key={plan.id} type="button" onClick={() => setHSelectedPlan(plan.id)}
+                      className={`w-full flex items-center justify-between p-5 rounded-2xl border transition-all text-left ${hSelectedPlan === plan.id ? 'bg-gold/10 border-gold shadow-lg shadow-gold/10' : (isDark ? 'bg-void border-void-border hover:border-gold/30' : 'bg-light-bg border-light-border hover:border-gold/20')}`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${hSelectedPlan === plan.id ? 'bg-gradient-to-br from-maroon to-gold' : (isDark ? 'bg-void-lighter' : 'bg-light-surface-2')}`}>
+                          <Calendar className={`w-6 h-6 ${hSelectedPlan === plan.id ? 'text-white' : 'text-gold'}`} />
+                        </div>
+                        <div>
+                          <div className={`font-display text-lg font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>{plan.label}</div>
+                          <div className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>{plan.duration} visibility</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`font-display text-2xl font-bold ${hSelectedPlan === plan.id ? 'text-gold' : (isDark ? 'text-ink' : 'text-light-text')}`}>${plan.price}</div>
+                        {plan.popular && <div className="flex items-center gap-1 text-xs text-gold mt-1"><Star className="w-3 h-3 fill-gold" /> Popular</div>}
+                      </div>
+                    </button>
+                  ))}
+                  {renderNavButtons()}
+                </div>
+              )}
+
+              {/* Step 6: Payment */}
+              {step === 6 && (
+                <div className="space-y-5">
+                  <div className={`p-4 rounded-xl border mb-4 ${isDark ? 'bg-void border-void-border' : 'bg-light-bg border-light-border'}`}>
+                    <div className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Total to pay</div>
+                    <div className="font-display text-3xl font-bold text-gold">${HIRING_PLANS.find((p) => p.id === hSelectedPlan)?.price || 0}</div>
+                    <div className={`text-xs ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>{HIRING_PLANS.find((p) => p.id === hSelectedPlan)?.label} plan</div>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Card Number</label>
+                    <div className="relative">
+                      <CreditCard className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+                      <input type="text" value={hCardNumber} onChange={(e) => setHCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))} placeholder="1234 5678 9012 3456" className={inputClass} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={labelClass}>Expiry</label>
+                      <input type="text" value={hCardExpiry} onChange={(e) => { let v = e.target.value.replace(/\D/g, '').slice(0, 4); if (v.length >= 2) v = v.slice(0, 2) + '/' + v.slice(2); setHCardExpiry(v); }} placeholder="MM/YY" className={inputClass} />
+                    </div>
+                    <div>
+                      <label className={labelClass}>CVC</label>
+                      <input type="text" value={hCardCvc} onChange={(e) => setHCardCvc(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="123" className={inputClass} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Name on Card</label>
+                    <input type="text" value={hCardName} onChange={(e) => setHCardName(e.target.value)} placeholder="John Smith" className={inputClass} />
+                  </div>
+                  {renderNavButtons()}
+                </div>
+              )}
+            </>
+          ) : (
+            /* ===== SEEKER WIZARD (9 steps) ===== */
+            <>
+              {/* Step 1: Work Category */}
+              {step === 1 && (
+                <div className="space-y-5">
+                  <p className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>What type of care work are you looking for?</p>
+                  <div className="grid grid-cols-1 gap-2">
+                    {categories.map((c) => (
+                      <button key={c.key} type="button" onClick={() => setSCategory(c.key)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium transition-all text-left ${
+                          sCategory === c.key ? 'bg-gold/10 border-gold text-gold' : isDark ? 'bg-void border-void-border text-ink-light hover:border-ink-muted' : 'bg-light-bg border-light-border text-light-text-2 hover:border-light-text-muted'
+                        }`}
+                      >
+                        <div className={`w-2 h-2 rounded-full ${c.key === 'nanny' ? 'bg-accent-nanny' : c.key === 'eldercare' ? 'bg-accent-elder' : c.key === 'cook' ? 'bg-accent-cook' : c.key === 'housekeeper' ? 'bg-accent-house' : 'bg-accent-clean'}`} />
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
+                  {renderNavButtons()}
+                </div>
+              )}
+
+              {/* Step 2: About You */}
+              {step === 2 && (
+                <div className="space-y-4">
+                  <div>
+                    <label className={labelClass}>Tell us about yourself</label>
+                    <div className="relative">
+                      <User className={`absolute left-3 top-3.5 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+                      <textarea value={sBio} onChange={(e) => setSBio(e.target.value)} rows={6} placeholder="Describe your background, skills, and why families should hire you..."
+                        className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm resize-none placeholder:text-opacity-60 ${isDark ? 'bg-void border-void-border text-ink placeholder:text-ink-muted' : 'bg-light-bg border-light-border text-light-text placeholder:text-light-text-muted'}`}
+                      />
+                    </div>
+                    <div className={`text-xs mt-1.5 text-right ${sBio.length < 20 ? 'text-red-400' : (isDark ? 'text-ink-muted' : 'text-light-text-muted')}`}>{sBio.length} characters (min 20)</div>
+                  </div>
+                  {renderNavButtons()}
+                </div>
+              )}
+
+              {/* Step 3: Experience & References */}
+              {step === 3 && (
+                <div className="space-y-5">
+                  <div>
+                    <label className={labelClass}>Years of Experience</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {EXPERIENCE_YEARS.map((yr) => (
+                        <button key={yr} type="button" onClick={() => setSExperience(yr)}
+                          className={`px-3 py-2.5 rounded-xl border text-xs font-medium transition-all ${
+                            sExperience === yr ? 'bg-gold/10 border-gold text-gold' : isDark ? 'bg-void border-void-border text-ink-light hover:border-ink-muted' : 'bg-light-bg border-light-border text-light-text-2 hover:border-light-text-muted'
+                          }`}
+                        >
+                          {yr}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className={labelClass}>References</label>
+                      <button type="button" onClick={addReference} className="flex items-center gap-1 text-xs text-gold hover:underline">
+                        <Plus className="w-3.5 h-3.5" /> Add
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      {sReferences.map((ref, idx) => (
+                        <div key={ref.id} className={`p-3 rounded-xl border ${isDark ? 'bg-void border-void-border' : 'bg-light-bg border-light-border'}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className={`text-xs font-medium ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Reference #{idx + 1}</span>
+                            {sReferences.length > 1 && (
+                              <button type="button" onClick={() => removeReference(ref.id)} className="text-red-400 hover:text-red-300">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <input type="text" value={ref.name} onChange={(e) => updateReference(ref.id, 'name', e.target.value)} placeholder="Name" className={`px-3 py-2 rounded-lg text-sm border ${isDark ? 'bg-void-lighter border-void-border text-ink placeholder:text-ink-muted' : 'bg-white border-light-border text-light-text placeholder:text-light-text-muted'}`} />
+                            <input type="text" value={ref.phone} onChange={(e) => updateReference(ref.id, 'phone', e.target.value)} placeholder="Phone" className={`px-3 py-2 rounded-lg text-sm border ${isDark ? 'bg-void-lighter border-void-border text-ink placeholder:text-ink-muted' : 'bg-white border-light-border text-light-text placeholder:text-light-text-muted'}`} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {renderNavButtons()}
+                </div>
+              )}
+
+              {/* Step 4: Location & Pay */}
+              {step === 4 && (
+                <div className="space-y-5">
+                  <div className="relative" ref={sLocationRef}>
+                    <label className={labelClass}>Location</label>
+                    <div className="relative">
+                      <MapPin className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+                      <input type="text" value={sLocationQuery} onChange={(e) => { setSLocationQuery(e.target.value); setSSelectedLocation(''); }} onFocus={() => setSLocationFocused(true)} placeholder="Search city..."
+                        className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm ${isDark ? 'bg-void border-void-border text-ink placeholder:text-ink-muted' : 'bg-light-bg border-light-border text-light-text placeholder:text-light-text-muted'}`}
+                      />
+                    </div>
+                    {sShowDropdown && (
+                      <div className={`absolute z-50 left-0 right-0 mt-1 rounded-xl border shadow-xl max-h-48 overflow-y-auto ${isDark ? 'bg-void-light border-void-border' : 'bg-white border-light-border'}`}>
+                        {sFilteredCities.length === 0 ? (
+                          <div className={`px-4 py-3 text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>No cities found.</div>
+                        ) : (
+                          sFilteredCities.map((city) => (
+                            <button key={city} type="button" onClick={() => handleSelectCity('s', city)}
+                              className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2 ${sSelectedLocation === city ? (isDark ? 'text-gold bg-gold/10' : 'text-maroon bg-maroon/10') : (isDark ? 'text-ink-light hover:text-ink hover:bg-void-lighter' : 'text-light-text-2 hover:text-light-text hover:bg-light-surface-2')}`}
+                            >
+                              <MapPin className={`w-3.5 h-3.5 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+                              {city}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className={labelClass}>Expected Pay Rate (per hour)</label>
+                    <div className="relative">
+                      <DollarSign className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+                      <input type="text" value={sSalary} onChange={(e) => setSSalary(e.target.value)} placeholder="e.g. $20-25/hr" className={inputClass} />
+                    </div>
+                  </div>
+                  {renderNavButtons()}
+                </div>
+              )}
+
+              {/* Step 5: Availability */}
+              {step === 5 && (
+                <div className="space-y-3">
+                  <p className={`text-sm mb-2 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Select your available days and hours.</p>
+                  {DAYS.map((day) => (
+                    <div key={day} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${sScheduleDays[day].active ? (isDark ? 'bg-gold/5 border-gold/30' : 'bg-gold/5 border-gold/20') : (isDark ? 'bg-void border-void-border' : 'bg-light-bg border-light-border')}`}>
+                      <button type="button" onClick={() => toggleDay('s', day)} className={`w-10 h-10 rounded-lg text-sm font-bold transition-all shrink-0 ${sScheduleDays[day].active ? 'bg-gradient-to-r from-maroon to-gold text-white shadow-md' : (isDark ? 'bg-void-lighter text-ink-muted' : 'bg-light-surface-2 text-light-text-muted')}`}>{day}</button>
+                      {sScheduleDays[day].active ? (
+                        <>
+                          <input type="time" value={sScheduleDays[day].start} onChange={(e) => updateDayTime('s', day, 'start', e.target.value)} className={`px-2 py-1.5 rounded-lg text-sm border ${isDark ? 'bg-void border-void-border text-ink' : 'bg-white border-light-border text-light-text'}`} />
+                          <span className={`text-sm shrink-0 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>to</span>
+                          <input type="time" value={sScheduleDays[day].end} onChange={(e) => updateDayTime('s', day, 'end', e.target.value)} className={`px-2 py-1.5 rounded-lg text-sm border ${isDark ? 'bg-void border-void-border text-ink' : 'bg-white border-light-border text-light-text'}`} />
+                        </>
+                      ) : (
+                        <span className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Not available</span>
+                      )}
+                    </div>
+                  ))}
+                  {renderNavButtons()}
+                </div>
+              )}
+
+              {/* Step 6: Job Term */}
+              {step === 6 && (
+                <div className="space-y-5">
+                  <p className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>What type of position are you looking for?</p>
+                  {[
+                    { id: 'short', label: 'Short Term', desc: 'Temporary, seasonal, or contract work' },
+                    { id: 'long', label: 'Long Term', desc: 'Permanent, ongoing employment' },
+                    { id: 'both', label: 'Open to Both', desc: 'Flexible — either short or long term' },
+                  ].map((opt) => (
+                    <button key={opt.id} type="button" onClick={() => setSTerm(opt.id)}
+                      className={`w-full flex items-center gap-4 p-5 rounded-2xl border transition-all text-left ${
+                        sTerm === opt.id ? 'bg-gold/10 border-gold shadow-lg shadow-gold/10' : (isDark ? 'bg-void border-void-border hover:border-gold/30' : 'bg-light-bg border-light-border hover:border-gold/20')
+                      }`}
+                    >
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${sTerm === opt.id ? 'bg-gradient-to-br from-maroon to-gold' : (isDark ? 'bg-void-lighter' : 'bg-light-surface-2')}`}>
+                        <Clock className={`w-6 h-6 ${sTerm === opt.id ? 'text-white' : 'text-gold'}`} />
+                      </div>
+                      <div>
+                        <div className={`font-display text-lg font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>{opt.label}</div>
+                        <div className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>{opt.desc}</div>
+                      </div>
+                    </button>
+                  ))}
+                  {renderNavButtons()}
+                </div>
+              )}
+
+              {/* Step 7: Plans */}
+              {step === 7 && (
+                <div className="space-y-4">
+                  <p className={`text-sm mb-2 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Choose how long you want your profile to stay active.</p>
+                  {SEEKER_PLANS.map((plan) => (
+                    <button key={plan.id} type="button" onClick={() => setSSelectedPlan(plan.id)}
+                      className={`w-full flex items-center justify-between p-5 rounded-2xl border transition-all text-left ${sSelectedPlan === plan.id ? 'bg-gold/10 border-gold shadow-lg shadow-gold/10' : (isDark ? 'bg-void border-void-border hover:border-gold/30' : 'bg-light-bg border-light-border hover:border-gold/20')}`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${sSelectedPlan === plan.id ? 'bg-gradient-to-br from-maroon to-gold' : (isDark ? 'bg-void-lighter' : 'bg-light-surface-2')}`}>
+                          <Calendar className={`w-6 h-6 ${sSelectedPlan === plan.id ? 'text-white' : 'text-gold'}`} />
+                        </div>
+                        <div>
+                          <div className={`font-display text-lg font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>{plan.label}</div>
+                          <div className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>{plan.duration} visibility</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`font-display text-2xl font-bold ${sSelectedPlan === plan.id ? 'text-gold' : (isDark ? 'text-ink' : 'text-light-text')}`}>${plan.price}</div>
+                        {plan.popular && <div className="flex items-center gap-1 text-xs text-gold mt-1"><Star className="w-3 h-3 fill-gold" /> Popular</div>}
+                      </div>
+                    </button>
+                  ))}
+                  {renderNavButtons()}
+                </div>
+              )}
+
+              {/* Step 8: Payment */}
+              {step === 8 && (
+                <div className="space-y-5">
+                  <div className={`p-4 rounded-xl border mb-4 ${isDark ? 'bg-void border-void-border' : 'bg-light-bg border-light-border'}`}>
+                    <div className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Total to pay</div>
+                    <div className="font-display text-3xl font-bold text-gold">${SEEKER_PLANS.find((p) => p.id === sSelectedPlan)?.price || 0}</div>
+                    <div className={`text-xs ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>{SEEKER_PLANS.find((p) => p.id === sSelectedPlan)?.label} plan</div>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Card Number</label>
+                    <div className="relative">
+                      <CreditCard className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+                      <input type="text" value={sCardNumber} onChange={(e) => setSCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))} placeholder="1234 5678 9012 3456" className={inputClass} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={labelClass}>Expiry</label>
+                      <input type="text" value={sCardExpiry} onChange={(e) => { let v = e.target.value.replace(/\D/g, '').slice(0, 4); if (v.length >= 2) v = v.slice(0, 2) + '/' + v.slice(2); setSCardExpiry(v); }} placeholder="MM/YY" className={inputClass} />
+                    </div>
+                    <div>
+                      <label className={labelClass}>CVC</label>
+                      <input type="text" value={sCardCvc} onChange={(e) => setSCardCvc(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="123" className={inputClass} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Name on Card</label>
+                    <input type="text" value={sCardName} onChange={(e) => setSCardName(e.target.value)} placeholder="John Smith" className={inputClass} />
+                  </div>
+                  {renderNavButtons()}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
