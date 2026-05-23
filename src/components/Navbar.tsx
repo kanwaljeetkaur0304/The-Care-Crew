@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Menu, X, HeartHandshake, LogOut, ChevronDown, Globe, MapPin, Search, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
@@ -38,6 +39,7 @@ export default function Navbar({ onPostAd, onAuth }: NavbarProps) {
     { label: 'Browse Jobs', href: '#listings' },
     { label: 'Caregivers', href: '#seekers' },
     { label: 'How It Works', href: '#how-it-works' },
+    { label: 'About Us', href: '/about' },
   ];
 
   const initials = (name: string) =>
@@ -88,32 +90,46 @@ export default function Navbar({ onPostAd, onAuth }: NavbarProps) {
         ? 'bg-void/90 border-void-border'
         : 'bg-white/80 border-light-border'
     }`}>
-      <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        <a href="#" className="flex items-center gap-2.5 group">
+      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-6">
+        <a href="#" className="flex items-center gap-2.5 group shrink-0">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-maroon to-gold flex items-center justify-center group-hover:scale-105 transition-transform shadow-lg shadow-maroon/20">
             <HeartHandshake className="w-5 h-5 text-white" />
           </div>
-          <span className={`font-display text-xl font-semibold tracking-tight ${
+          <span className={`font-display text-xl font-semibold tracking-tight whitespace-nowrap ${
             isDark ? 'text-ink' : 'text-light-text'
           }`}>
             The Care Crew
           </span>
         </a>
 
-        <div className="hidden md:flex items-center gap-6">
-          {navLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className={`text-sm font-medium link-underline transition-colors ${
-                isDark
-                  ? 'text-ink-light hover:text-gold'
-                  : 'text-light-text-2 hover:text-maroon'
-              }`}
-            >
-              {link.label}
-            </a>
-          ))}
+        <div className="hidden md:flex items-center gap-8">
+          {navLinks.map((link) =>
+            link.href.startsWith('/') ? (
+              <Link
+                key={link.href}
+                to={link.href}
+                className={`text-sm font-medium link-underline transition-colors whitespace-nowrap ${
+                  isDark
+                    ? 'text-ink-light hover:text-gold'
+                    : 'text-light-text-2 hover:text-maroon'
+                }`}
+              >
+                {link.label}
+              </Link>
+            ) : (
+              <a
+                key={link.href}
+                href={link.href}
+                className={`text-sm font-medium link-underline transition-colors whitespace-nowrap ${
+                  isDark
+                    ? 'text-ink-light hover:text-gold'
+                    : 'text-light-text-2 hover:text-maroon'
+                }`}
+              >
+                {link.label}
+              </a>
+            )
+          )}
 
           {/* Location Selector */}
           <div className="relative" ref={locationRef}>
@@ -257,10 +273,10 @@ export default function Navbar({ onPostAd, onAuth }: NavbarProps) {
           </div>
 
           {user ? (
-            <div className="flex items-center gap-4">
+            <>
               <button
                 onClick={onPostAd}
-                className="btn-press px-5 py-2.5 bg-gradient-to-r from-maroon to-gold text-white text-sm font-medium rounded-full hover:opacity-90 transition-opacity shadow-lg shadow-maroon/20"
+                className="btn-press px-5 py-2.5 bg-gradient-to-r from-maroon to-gold text-white text-sm font-medium rounded-full hover:opacity-90 transition-opacity shadow-lg shadow-maroon/20 whitespace-nowrap"
               >
                 Post an Ad
               </button>
@@ -312,12 +328,12 @@ export default function Navbar({ onPostAd, onAuth }: NavbarProps) {
                   </>
                 )}
               </div>
-            </div>
+            </>
           ) : (
-            <div className="flex items-center gap-3">
+            <>
               <button
                 onClick={onAuth}
-                className={`text-sm font-medium link-underline transition-colors ${
+                className={`text-sm font-medium link-underline transition-colors whitespace-nowrap ${
                   isDark
                     ? 'text-ink-light hover:text-gold'
                     : 'text-light-text-2 hover:text-maroon'
@@ -327,11 +343,11 @@ export default function Navbar({ onPostAd, onAuth }: NavbarProps) {
               </button>
               <button
                 onClick={onAuth}
-                className="btn-press px-5 py-2.5 bg-gradient-to-r from-maroon to-gold text-white text-sm font-medium rounded-full hover:opacity-90 transition-opacity shadow-lg shadow-maroon/20"
+                className="btn-press px-5 py-2.5 bg-gradient-to-r from-maroon to-gold text-white text-sm font-medium rounded-full hover:opacity-90 transition-opacity shadow-lg shadow-maroon/20 whitespace-nowrap"
               >
                 Get Started
               </button>
-            </div>
+            </>
           )}
         </div>
 

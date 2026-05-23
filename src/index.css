@@ -36,6 +36,14 @@
   --color-teal: #2a9d8f;
   --color-teal-light: #d4f2ee;
 
+  /* ===== DESI CULTURAL ACCENTS ===== */
+  --color-marigold: #f5a623;       /* genda phool — wedding garlands, temple offerings */
+  --color-marigold-light: #fef3d8;
+  --color-lotus: #c96480;          /* lotus flower — sacred, feminine, elegant */
+  --color-lotus-light: #f9e4ec;
+  --color-haldi: #e8c547;          /* turmeric yellow — auspicious, festive */
+  --color-haldi-light: #fdf7d6;
+
   /* Category accents */
   --color-accent-nanny: #c94072;
   --color-accent-elder: #2a9d8f;
@@ -215,22 +223,32 @@ html.light select:focus {
 .animate-delay-4 { animation-delay: 0.4s; }
 .animate-delay-5 { animation-delay: 0.5s; }
 
-/* Diagonal stripe pattern for sections */
+/* Rangoli-inspired dot grid pattern — evokes geometric kolam/rangoli floor art */
 html.dark .pattern-diagonal {
-  background-image: repeating-linear-gradient(
-    45deg,
-    transparent,
-    transparent 10px,
-    rgba(201, 162, 39, 0.03) 10px,
-    rgba(201, 162, 39, 0.03) 20px
-  );
+  background-image:
+    radial-gradient(circle, rgba(201, 162, 39, 0.10) 1px, transparent 1px),
+    radial-gradient(circle, rgba(245, 166, 35, 0.06) 1px, transparent 1px);
+  background-size: 28px 28px, 56px 56px;
+  background-position: 0 0, 14px 14px;
 }
 html.light .pattern-diagonal {
-  background-image: repeating-linear-gradient(
-    45deg,
-    transparent,
-    transparent 10px,
-    rgba(196, 168, 130, 0.05) 10px,
-    rgba(196, 168, 130, 0.05) 20px
-  );
+  background-image:
+    radial-gradient(circle, rgba(201, 162, 39, 0.12) 1px, transparent 1px),
+    radial-gradient(circle, rgba(245, 162, 35, 0.07) 1px, transparent 1px);
+  background-size: 28px 28px, 56px 56px;
+  background-position: 0 0, 14px 14px;
+}
+
+/* Decorative section dividers */
+.divider-marigold {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(245, 166, 35, 0.5) 30%, rgba(245, 166, 35, 0.5) 70%, transparent);
+}
+.divider-lotus {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(201, 100, 128, 0.5) 30%, rgba(201, 100, 128, 0.5) 70%, transparent);
+}
+.divider-saffron {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(224, 123, 57, 0.5) 30%, rgba(224, 123, 57, 0.5) 70%, transparent);
 }

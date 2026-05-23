@@ -63,9 +63,8 @@ export default function Categories() {
     }`}>
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-10">
-          <span className={`text-xs font-semibold tracking-widest uppercase mb-3 block ${
-            isDark ? 'text-gold' : 'text-maroon'
-          }`}>
+          <div className="divider-marigold max-w-24 mx-auto mb-6" />
+          <span className="text-xs font-semibold tracking-widest uppercase mb-3 block text-marigold">
             Categories
           </span>
           <h2 className={`font-display text-4xl md:text-5xl font-semibold ${

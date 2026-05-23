@@ -1,6 +1,12 @@
-import { StrictMode } from 'react'
+import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
 import { ThemeProvider } from './context/ThemeContext'
 import { AuthProvider } from './context/AuthContext'
 import { LocationProvider } from './context/LocationContext'
@@ -21,6 +27,7 @@ import Resources from './pages/Resources.tsx'
 import PrivacyPolicy from './pages/PrivacyPolicy.tsx'
 import TermsOfService from './pages/TermsOfService.tsx'
 import CookiesPolicy from './pages/CookiesPolicy.tsx'
+import AboutUs from './pages/AboutUs.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -29,6 +36,7 @@ createRoot(document.getElementById('root')!).render(
         <AuthProvider>
           <LocationProvider>
             <SubscriptionProvider>
+              <ScrollToTop />
               <Routes>
                 <Route path="/" element={<App />} />
                 <Route path="/caregivers" element={<AllCaregivers />} />
@@ -39,6 +47,7 @@ createRoot(document.getElementById('root')!).render(
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/resume-tips" element={<ResumeTips />} />
                 <Route path="/resources" element={<Resources />} />
+                <Route path="/about" element={<AboutUs />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/terms" element={<TermsOfService />} />
                 <Route path="/cookies" element={<CookiesPolicy />} />

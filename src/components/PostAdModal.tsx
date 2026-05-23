@@ -65,7 +65,10 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
   const [hLocationQuery, setHLocationQuery] = useState('');
   const [hLocationFocused, setHLocationFocused] = useState(false);
   const [hSelectedLocation, setHSelectedLocation] = useState('');
-  const [hSalary, setHSalary] = useState('');
+  const [hSalaryMin, setHSalaryMin] = useState('');
+  const [hSalaryMax, setHSalaryMax] = useState('');
+  const [hLanguages, setHLanguages] = useState<string[]>([]); // #5 languages caregiver should speak
+  const [hNeedDriver, setHNeedDriver] = useState('');      // #6 driver preference
   const [hScheduleDays, setHScheduleDays] = useState<Record<string, { active: boolean; start: string; end: string }>>({
     Mon: { active: false, start: '09:00', end: '17:00' },
     Tue: { active: false, start: '09:00', end: '17:00' },
@@ -83,13 +86,19 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
 
   // ===== SEEKER FORM STATE =====
   const [sCategory, setSCategory] = useState('');
+  const [sCuisines, setSCuisines] = useState<string[]>([]);  // #9 cook cuisines
   const [sBio, setSBio] = useState('');
   const [sExperience, setSExperience] = useState('');
   const [sReferences, setSReferences] = useState<Reference[]>([{ id: '1', name: '', phone: '' }]);
   const [sLocationQuery, setSLocationQuery] = useState('');
   const [sLocationFocused, setSLocationFocused] = useState(false);
   const [sSelectedLocation, setSSelectedLocation] = useState('');
-  const [sSalary, setSSalary] = useState('');
+  const [sSalaryMin, setSSalaryMin] = useState('');          // #7 pay range
+  const [sSalaryMax, setSSalaryMax] = useState('');
+  const [sLanguages, setSLanguages] = useState<string[]>([]); // #5 languages spoken
+  const [sNativeLanguage, setSNativeLanguage] = useState(''); // #5 native language
+  const [sCanDrive, setSCanDrive] = useState('');              // #6 can drive
+  const [sSocialLink, setSSocialLink] = useState('');          // #2 social media link
   const [sScheduleDays, setSScheduleDays] = useState<Record<string, { active: boolean; start: string; end: string }>>({
     Mon: { active: false, start: '09:00', end: '17:00' },
     Tue: { active: false, start: '09:00', end: '17:00' },
@@ -139,12 +148,14 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
 
   const resetAllForms = () => {
     // Hiring
-    setHTitle(''); setHCategory(''); setHLocationQuery(''); setHSelectedLocation(''); setHSalary('');
+    setHTitle(''); setHCategory(''); setHLocationQuery(''); setHSelectedLocation('');
+    setHSalaryMin(''); setHSalaryMax(''); setHLanguages([]); setHNeedDriver('');
     setHScheduleDays({ Mon: { active: false, start: '09:00', end: '17:00' }, Tue: { active: false, start: '09:00', end: '17:00' }, Wed: { active: false, start: '09:00', end: '17:00' }, Thu: { active: false, start: '09:00', end: '17:00' }, Fri: { active: false, start: '09:00', end: '17:00' }, Sat: { active: false, start: '09:00', end: '17:00' }, Sun: { active: false, start: '09:00', end: '17:00' } });
     setHDescription(''); setHSelectedPlan(''); setHPaymentError(''); setHClientSecret(null); setHPaymentLoading(false);
     // Seeker
-    setSCategory(''); setSBio(''); setSExperience(''); setSReferences([{ id: '1', name: '', phone: '' }]);
-    setSLocationQuery(''); setSSelectedLocation(''); setSSalary('');
+    setSCategory(''); setSCuisines([]); setSBio(''); setSExperience(''); setSReferences([{ id: '1', name: '', phone: '' }]);
+    setSLocationQuery(''); setSSelectedLocation(''); setSSalaryMin(''); setSSalaryMax('');
+    setSLanguages([]); setSNativeLanguage(''); setSCanDrive(''); setSSocialLink('');
     setSScheduleDays({ Mon: { active: false, start: '09:00', end: '17:00' }, Tue: { active: false, start: '09:00', end: '17:00' }, Wed: { active: false, start: '09:00', end: '17:00' }, Thu: { active: false, start: '09:00', end: '17:00' }, Fri: { active: false, start: '09:00', end: '17:00' }, Sat: { active: false, start: '09:00', end: '17:00' }, Sun: { active: false, start: '09:00', end: '17:00' } });
     setSTerm(''); setSSelectedPlan(''); setSPaymentError(''); setSClientSecret(null); setSPaymentLoading(false);
   };
@@ -187,7 +198,7 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
     if (adType === 'family') {
       switch (step) {
         case 1: return hTitle.trim() && hCategory;
-        case 2: return hSelectedLocation && hSalary.trim();
+        case 2: return hSelectedLocation && hSalaryMin.trim() && hNeedDriver;
         case 3: return Object.values(hScheduleDays).some((d) => d.active);
         case 4: return hDescription.trim().length > 20;
         case 5: return hSelectedPlan;
@@ -199,7 +210,7 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
         case 1: return sCategory;
         case 2: return sBio.trim().length > 20;
         case 3: return sExperience && sReferences.some((r) => r.name.trim() && r.phone.trim());
-        case 4: return sSelectedLocation && sSalary.trim();
+        case 4: return sSelectedLocation && sSalaryMin.trim() && sCanDrive;
         case 5: return Object.values(sScheduleDays).some((d) => d.active);
         case 6: return sTerm;
         case 7: return sSelectedPlan;
@@ -359,34 +370,32 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
   );
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-void/60 modal-backdrop" onClick={onClose} />
+    <div className={`fixed inset-0 z-[100] overflow-y-auto ${isDark ? 'bg-void-light' : 'bg-white'}`}>
+      <div className="min-h-full max-w-2xl mx-auto flex flex-col">
 
-      <div className={`relative rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border ${
-        isDark ? 'bg-void-light border-void-border' : 'bg-white border-light-border'
-      }`}>
-        {/* Header */}
-        <div className={`sticky top-0 border-b px-6 py-4 flex items-center justify-between z-10 ${
+        {/* Sticky header + stepper */}
+        <div className={`sticky top-0 z-10 border-b ${
           isDark ? 'bg-void-light border-void-border' : 'bg-white border-light-border'
         }`}>
-          <div>
-            <h3 className={`font-display text-xl font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>
-              {adType === null ? 'Post an Ad' : adType === 'family' ? 'Hire a Caregiver' : 'Find a Job'}
-            </h3>
-            {adType !== null && !submitted && (
-              <div className={`text-xs mt-0.5 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
-                Step {step} of {totalSteps} — {stepTitles[step]}
-              </div>
-            )}
+          <div className="px-6 py-4 flex items-center justify-between">
+            <div>
+              <h3 className={`font-display text-2xl font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>
+                {adType === null ? 'Post an Ad' : adType === 'family' ? 'Hire a Caregiver' : 'Find a Job'}
+              </h3>
+              {adType !== null && !submitted && (
+                <div className={`text-xs mt-0.5 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
+                  Step {step} of {totalSteps} — {stepTitles[step]}
+                </div>
+              )}
+            </div>
+            <button onClick={onClose} className={`p-2 rounded-xl transition-colors ${isDark ? 'hover:bg-void-lighter text-ink-muted' : 'hover:bg-light-surface-2 text-light-text-muted'}`}>
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <button onClick={onClose} className={`p-1 rounded-lg transition-colors ${isDark ? 'hover:bg-void-lighter' : 'hover:bg-light-surface-2'}`}>
-            <X className={`w-5 h-5 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
-          </button>
+          {adType !== null && !submitted && renderStepper()}
         </div>
 
-        {adType !== null && !submitted && renderStepper()}
-
-        <div className="p-6">
+        <div className="flex-1 p-6 md:p-10">
           {/* ===== LANDING SCREEN ===== */}
           {adType === null ? (
             <div className="space-y-4">
@@ -499,11 +508,59 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
                       </div>
                     )}
                   </div>
+                  {/* #7 Pay Rate Range */}
                   <div>
-                    <label className={labelClass}>Salary / Rate (per hour)</label>
-                    <div className="relative">
-                      <DollarSign className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
-                      <input type="text" value={hSalary} onChange={(e) => setHSalary(e.target.value)} placeholder="e.g. $25/hr" className={inputClass} />
+                    <label className={labelClass}>Pay Rate Range (per hour)</label>
+                    <div className="flex items-center gap-3">
+                      <div className="relative flex-1">
+                        <DollarSign className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+                        <input type="number" min="0" value={hSalaryMin} onChange={(e) => setHSalaryMin(e.target.value)} placeholder="Min e.g. 20" className={inputClass.replace('px-4', 'pl-10 pr-4')} />
+                      </div>
+                      <span className={`text-sm font-medium shrink-0 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>to</span>
+                      <div className="relative flex-1">
+                        <DollarSign className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+                        <input type="number" min="0" value={hSalaryMax} onChange={(e) => setHSalaryMax(e.target.value)} placeholder="Max e.g. 28" className={inputClass.replace('px-4', 'pl-10 pr-4')} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* #5 Language preference — multi-select */}
+                  <div>
+                    <label className={labelClass}>
+                      Preferred Languages for Caregiver{' '}
+                      <span className={`font-normal text-xs ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>(optional — select all that apply)</span>
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['Punjabi', 'Hindi', 'Urdu', 'Gujarati', 'Tamil', 'Telugu', 'Bengali', 'Tagalog', 'Mandarin', 'Cantonese', 'Korean', 'Arabic', 'English'].map((lang) => {
+                        const selected = hLanguages.includes(lang);
+                        return (
+                          <button key={lang} type="button"
+                            onClick={() => setHLanguages((prev) => selected ? prev.filter((l) => l !== lang) : [...prev, lang])}
+                            className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-medium transition-all text-left ${
+                              selected ? 'bg-gold/10 border-gold text-gold' : isDark ? 'bg-void border-void-border text-ink-light hover:border-ink-muted' : 'bg-light-bg border-light-border text-light-text-2 hover:border-light-text-muted'
+                            }`}
+                          >
+                            <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${selected ? 'bg-gold border-gold' : isDark ? 'border-void-border' : 'border-light-border'}`}>
+                              {selected && <span className="text-white text-[8px] font-bold">✓</span>}
+                            </div>
+                            {lang}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* #6 Driver */}
+                  <div>
+                    <label className={labelClass}>Do you need the caregiver to drive?</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[{ id: 'yes', label: 'Yes, required' }, { id: 'no', label: 'No driving' }, { id: 'adjustable', label: 'Flexible' }].map((opt) => (
+                        <button key={opt.id} type="button" onClick={() => setHNeedDriver(opt.id)}
+                          className={`px-3 py-2.5 rounded-xl border text-xs font-medium transition-all ${
+                            hNeedDriver === opt.id ? 'bg-gold/10 border-gold text-gold' : isDark ? 'bg-void border-void-border text-ink-light hover:border-ink-muted' : 'bg-light-bg border-light-border text-light-text-2 hover:border-light-text-muted'
+                          }`}
+                        >{opt.label}</button>
+                      ))}
                     </div>
                   </div>
                   {renderNavButtons()}
@@ -619,7 +676,7 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
                   <p className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>What type of care work are you looking for?</p>
                   <div className="grid grid-cols-1 gap-2">
                     {categories.map((c) => (
-                      <button key={c.key} type="button" onClick={() => setSCategory(c.key)}
+                      <button key={c.key} type="button" onClick={() => { setSCategory(c.key); if (c.key !== 'cook') setSCuisines([]); }}
                         className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium transition-all text-left ${
                           sCategory === c.key ? 'bg-gold/10 border-gold text-gold' : isDark ? 'bg-void border-void-border text-ink-light hover:border-ink-muted' : 'bg-light-bg border-light-border text-light-text-2 hover:border-light-text-muted'
                         }`}
@@ -629,6 +686,33 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
                       </button>
                     ))}
                   </div>
+
+                  {/* #9 Cuisine types — shown only when Cook is selected */}
+                  {sCategory === 'cook' && (
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-ink' : 'text-light-text'}`}>
+                        What cuisines can you cook? <span className={`font-normal text-xs ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>(select all that apply)</span>
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {['North Indian', 'South Indian', 'Punjabi', 'Gujarati', 'Indo-Chinese', 'Pakistani / Halal', 'Bengali', 'Continental / Western', 'Other'].map((cuisine) => {
+                          const selected = sCuisines.includes(cuisine);
+                          return (
+                            <button key={cuisine} type="button"
+                              onClick={() => setSCuisines((prev) => selected ? prev.filter((c) => c !== cuisine) : [...prev, cuisine])}
+                              className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-medium transition-all text-left ${
+                                selected ? 'bg-gold/10 border-gold text-gold' : isDark ? 'bg-void border-void-border text-ink-light hover:border-ink-muted' : 'bg-light-bg border-light-border text-light-text-2 hover:border-light-text-muted'
+                              }`}
+                            >
+                              <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${selected ? 'bg-gold border-gold' : isDark ? 'border-void-border' : 'border-light-border'}`}>
+                                {selected && <span className="text-white text-[8px] font-bold">✓</span>}
+                              </div>
+                              {cuisine}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                   {renderNavButtons()}
                 </div>
               )}
@@ -645,6 +729,20 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
                       />
                     </div>
                     <div className={`text-xs mt-1.5 text-right ${sBio.length < 20 ? 'text-red-400' : (isDark ? 'text-ink-muted' : 'text-light-text-muted')}`}>{sBio.length} characters (min 20)</div>
+                  </div>
+                  {/* #2 Social media link */}
+                  <div>
+                    <label className={labelClass}>
+                      Social Media Link{' '}
+                      <span className={`font-normal text-xs ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>(optional — Instagram, LinkedIn, etc.)</span>
+                    </label>
+                    <input
+                      type="url"
+                      value={sSocialLink}
+                      onChange={(e) => setSSocialLink(e.target.value)}
+                      placeholder="e.g. https://instagram.com/yourprofile"
+                      className={inputClass}
+                    />
                   </div>
                   {renderNavButtons()}
                 </div>
@@ -726,11 +824,66 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
                       </div>
                     )}
                   </div>
+                  {/* #7 Pay Rate Range */}
                   <div>
-                    <label className={labelClass}>Expected Pay Rate (per hour)</label>
-                    <div className="relative">
-                      <DollarSign className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
-                      <input type="text" value={sSalary} onChange={(e) => setSSalary(e.target.value)} placeholder="e.g. $20-25/hr" className={inputClass} />
+                    <label className={labelClass}>Expected Pay Rate Range (per hour)</label>
+                    <div className="flex items-center gap-3">
+                      <div className="relative flex-1">
+                        <DollarSign className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+                        <input type="number" min="0" value={sSalaryMin} onChange={(e) => setSSalaryMin(e.target.value)} placeholder="Min e.g. 18" className={inputClass.replace('px-4', 'pl-10 pr-4')} />
+                      </div>
+                      <span className={`text-sm font-medium shrink-0 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>to</span>
+                      <div className="relative flex-1">
+                        <DollarSign className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+                        <input type="number" min="0" value={sSalaryMax} onChange={(e) => setSSalaryMax(e.target.value)} placeholder="Max e.g. 25" className={inputClass.replace('px-4', 'pl-10 pr-4')} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* #5 Languages spoken */}
+                  <div>
+                    <label className={labelClass}>Languages you speak <span className={`font-normal text-xs ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>(select all that apply)</span></label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['Punjabi', 'Hindi', 'Urdu', 'Gujarati', 'Tamil', 'Telugu', 'Bengali', 'Tagalog', 'Mandarin', 'Cantonese', 'Korean', 'Arabic', 'English'].map((lang) => {
+                        const selected = sLanguages.includes(lang);
+                        return (
+                          <button key={lang} type="button"
+                            onClick={() => setSLanguages((prev) => selected ? prev.filter((l) => l !== lang) : [...prev, lang])}
+                            className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-medium transition-all text-left ${
+                              selected ? 'bg-gold/10 border-gold text-gold' : isDark ? 'bg-void border-void-border text-ink-light hover:border-ink-muted' : 'bg-light-bg border-light-border text-light-text-2 hover:border-light-text-muted'
+                            }`}
+                          >
+                            <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${selected ? 'bg-gold border-gold' : isDark ? 'border-void-border' : 'border-light-border'}`}>
+                              {selected && <span className="text-white text-[8px] font-bold">✓</span>}
+                            </div>
+                            {lang}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Your native / first language</label>
+                    <select value={sNativeLanguage} onChange={(e) => setSNativeLanguage(e.target.value)} className={inputClass}>
+                      <option value="">Select your native language</option>
+                      {['Punjabi', 'Hindi', 'Urdu', 'Gujarati', 'Tamil', 'Telugu', 'Bengali', 'Tagalog', 'Mandarin', 'Cantonese', 'Korean', 'Arabic', 'English', 'Other'].map((lang) => (
+                        <option key={lang} value={lang}>{lang}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* #6 Driving */}
+                  <div>
+                    <label className={labelClass}>Can you drive?</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[{ id: 'yes', label: "Yes, I have a driver's license" }, { id: 'no', label: "No, I don't drive" }].map((opt) => (
+                        <button key={opt.id} type="button" onClick={() => setSCanDrive(opt.id)}
+                          className={`px-3 py-2.5 rounded-xl border text-xs font-medium transition-all ${
+                            sCanDrive === opt.id ? 'bg-gold/10 border-gold text-gold' : isDark ? 'bg-void border-void-border text-ink-light hover:border-ink-muted' : 'bg-light-bg border-light-border text-light-text-2 hover:border-light-text-muted'
+                          }`}
+                        >{opt.label}</button>
+                      ))}
                     </div>
                   </div>
                   {renderNavButtons()}
@@ -853,3 +1006,4 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
     </div>
   );
 }
+

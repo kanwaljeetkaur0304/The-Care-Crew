@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   MapPin, Clock, DollarSign, Calendar, Briefcase, Search, ArrowLeft,
   SlidersHorizontal, X, HeartHandshake, Users, ShieldCheck, Sparkles, Filter
@@ -54,14 +54,23 @@ function matchesSalaryType(salary: string, filter: string): boolean {
 }
 
 export default function AllJobs() {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchParams] = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') ?? '');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [scheduleFilter, setScheduleFilter] = useState('all');
   const [salaryFilter, setSalaryFilter] = useState('all');
-  const [locFilter, setLocFilter] = useState('All Locations');
+  const [locFilter, setLocFilter] = useState(searchParams.get('city') ?? 'All Locations');
   const [showFilters, setShowFilters] = useState(false);
   const { matchesCity, selectedCity, isAllLocations } = useLocation();
   const { isDark } = useTheme();
+
+  // Sync URL params if user navigates here again with new params
+  useEffect(() => {
+    const q = searchParams.get('q');
+    const city = searchParams.get('city');
+    if (q) setSearchQuery(q);
+    if (city) setLocFilter(city);
+  }, [searchParams]);
 
   const categories = [
     { key: 'all', label: 'All Jobs' },

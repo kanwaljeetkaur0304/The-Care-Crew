@@ -30,9 +30,8 @@ export default function JobListings() {
       <div className="max-w-6xl mx-auto px-6">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12">
           <div>
-            <span className={`text-xs font-semibold tracking-widest uppercase mb-3 block ${
-              isDark ? 'text-gold' : 'text-maroon'
-            }`}>
+            <div className="divider-marigold max-w-16 mb-5" />
+            <span className="text-xs font-semibold tracking-widest uppercase mb-3 block text-marigold">
               For Job Seekers
             </span>
             <h2 className={`font-display text-4xl md:text-5xl font-semibold ${

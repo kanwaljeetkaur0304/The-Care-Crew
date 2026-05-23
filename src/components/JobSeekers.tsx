@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MapPin, Star, DollarSign, Clock, Award, ArrowRight } from 'lucide-react';
+import { MapPin, Star, DollarSign, Clock, Award, ArrowRight, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { jobSeekers, categoryColors, categoryLabels, type JobSeeker } from '../data/mockData';
 import { useLocation } from '../context/LocationContext';
@@ -36,9 +36,8 @@ export default function JobSeekers() {
       <div className="max-w-6xl mx-auto px-6">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12">
           <div>
-            <span className={`text-xs font-semibold tracking-widest uppercase mb-3 block ${
-              isDark ? 'text-gold' : 'text-maroon'
-            }`}>
+            <div className="divider-lotus max-w-16 mb-5" />
+            <span className="text-xs font-semibold tracking-widest uppercase mb-3 block text-lotus">
               For Families
             </span>
             <h2 className={`font-display text-4xl md:text-5xl font-semibold ${
@@ -114,11 +113,30 @@ export default function JobSeekers() {
                         </span>
                       </div>
                     </div>
-                    <div className={`flex items-center gap-1 text-xs ${
-                      isDark ? 'text-ink-muted' : 'text-light-text-muted'
-                    }`}>
-                      <Star className="w-3.5 h-3.5 fill-gold text-gold" />
-                      <span className={`font-medium ${isDark ? 'text-ink' : 'text-light-text'}`}>4.9</span>
+                    <div className="flex items-center gap-2">
+                      {seeker.socialLink && (
+                        <a
+                          href={seeker.socialLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-ink-muted hover:text-gold' : 'text-light-text-muted hover:text-maroon'}`}
+                          title="Social profile"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                      <div className={`flex items-center gap-1 text-xs ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
+                        <Star className="w-3.5 h-3.5 fill-gold text-gold" />
+                        <span className={`font-medium ${isDark ? 'text-ink' : 'text-light-text'}`}>
+                          {seeker.rating ?? '—'}
+                        </span>
+                        {seeker.reviewCount && (
+                          <span className={`${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
+                            ({seeker.reviewCount})
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 

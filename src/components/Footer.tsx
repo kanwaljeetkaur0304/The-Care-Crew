@@ -120,23 +120,27 @@ export default function Footer() {
               isDark ? 'text-gold' : 'text-maroon'
             }`}>Contact</h4>
             <ul className="space-y-3">
-              <li className={`flex items-center gap-2 text-sm ${
-                isDark ? 'text-ink-muted' : 'text-light-text-muted'
-              }`}>
-                <Mail className="w-4 h-4" />
-                kanwaljeet0304@gmail.com
+              <li>
+                <a href="mailto:kanwaljeetkaur0304@gmail.com" className={`flex items-center gap-2 text-sm transition-colors ${
+                  isDark ? 'text-ink-muted hover:text-gold' : 'text-light-text-muted hover:text-maroon'
+                }`}>
+                  <Mail className="w-4 h-4 shrink-0" />
+                  kanwaljeetkaur0304@gmail.com
+                </a>
+              </li>
+              <li>
+                <a href="tel:+19027892122" className={`flex items-center gap-2 text-sm transition-colors ${
+                  isDark ? 'text-ink-muted hover:text-gold' : 'text-light-text-muted hover:text-maroon'
+                }`}>
+                  <Phone className="w-4 h-4 shrink-0" />
+                  +1 (902) 789-2122
+                </a>
               </li>
               <li className={`flex items-center gap-2 text-sm ${
                 isDark ? 'text-ink-muted' : 'text-light-text-muted'
               }`}>
-                <Phone className="w-4 h-4" />
-                +1 (902) 489-2122
-              </li>
-              <li className={`flex items-center gap-2 text-sm ${
-                isDark ? 'text-ink-muted' : 'text-light-text-muted'
-              }`}>
-                <MapPin className="w-4 h-4" />
-                Halifax, Nova Scotia
+                <MapPin className="w-4 h-4 shrink-0" />
+                Halifax, Nova Scotia, Canada
               </li>
             </ul>
           </div>
