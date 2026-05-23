@@ -57,31 +57,33 @@ export default function Hero({ onPostAd, onBrowse }: HeroProps) {
             </p>
 
             {/* Search Bar */}
-            <form onSubmit={handleSearch} className={`flex flex-col sm:flex-row gap-2 p-2 rounded-2xl border shadow-lg mb-6 animate-fade-up animate-delay-3 ${
+            <form onSubmit={handleSearch} className={`flex flex-row items-stretch gap-2 p-2 rounded-2xl border shadow-lg mb-6 animate-fade-up animate-delay-3 ${
               isDark ? 'bg-void-light border-void-border' : 'bg-white border-light-border'
             }`}>
-              <div className="flex items-center gap-2 flex-1 px-3">
-                <Search className={`w-4 h-4 shrink-0 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder='e.g. Nanny, Cook, Elder Care...'
-                  className={`w-full bg-transparent text-sm outline-none ${isDark ? 'text-ink placeholder:text-ink-muted' : 'text-light-text placeholder:text-light-text-muted'}`}
-                />
+              <div className="flex flex-col flex-1 min-w-0">
+                <div className="flex items-center gap-2 px-3 py-1.5">
+                  <Search className={`w-4 h-4 shrink-0 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder='e.g. Nanny, Cook, Elder Care...'
+                    className={`w-full bg-transparent text-sm outline-none ${isDark ? 'text-ink placeholder:text-ink-muted' : 'text-light-text placeholder:text-light-text-muted'}`}
+                  />
+                </div>
+                <div className={`mx-3 h-px ${isDark ? 'bg-void-border' : 'bg-light-border'}`} />
+                <div className="flex items-center gap-2 px-3 py-1.5">
+                  <MapPin className={`w-4 h-4 shrink-0 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+                  <input
+                    type="text"
+                    value={searchCity}
+                    onChange={(e) => setSearchCity(e.target.value)}
+                    placeholder='City e.g. Toronto, Brampton...'
+                    className={`w-full bg-transparent text-sm outline-none ${isDark ? 'text-ink placeholder:text-ink-muted' : 'text-light-text placeholder:text-light-text-muted'}`}
+                  />
+                </div>
               </div>
-              <div className={`w-px hidden sm:block self-stretch my-1 ${isDark ? 'bg-void-border' : 'bg-light-border'}`} />
-              <div className="flex items-center gap-2 flex-1 px-3">
-                <MapPin className={`w-4 h-4 shrink-0 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
-                <input
-                  type="text"
-                  value={searchCity}
-                  onChange={(e) => setSearchCity(e.target.value)}
-                  placeholder='City e.g. Toronto, Brampton...'
-                  className={`w-full bg-transparent text-sm outline-none ${isDark ? 'text-ink placeholder:text-ink-muted' : 'text-light-text placeholder:text-light-text-muted'}`}
-                />
-              </div>
-              <button type="submit" className="btn-press px-5 py-2.5 bg-gradient-to-r from-maroon to-gold text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity shrink-0">
+              <button type="submit" className="btn-press px-4 py-2 bg-gradient-to-r from-maroon to-gold text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity shrink-0 self-center">
                 Search
               </button>
             </form>

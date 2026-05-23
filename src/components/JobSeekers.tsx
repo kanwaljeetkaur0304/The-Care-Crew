@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { MapPin, Star, DollarSign, Clock, Award, ArrowRight, ExternalLink } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { jobSeekers, categoryColors, categoryLabels, type JobSeeker } from '../data/mockData';
 import { useLocation } from '../context/LocationContext';
 import { useTheme } from '../context/ThemeContext';
@@ -9,6 +9,7 @@ export default function JobSeekers() {
   const [filter, setFilter] = useState<string>('all');
   const { matchesCity, selectedCity, isAllLocations } = useLocation();
   const { isDark } = useTheme();
+  const navigate = useNavigate();
 
   const filtered: JobSeeker[] =
     (filter === 'all' ? jobSeekers : jobSeekers.filter((s) => s.category === filter))
@@ -91,7 +92,7 @@ export default function JobSeekers() {
             {filtered.slice(0, 6).map((seeker) => {
               const colors = categoryColors[seeker.category];
               return (
-              <Link key={seeker.id} to={`/caregivers/${seeker.id}`} onClick={() => setTimeout(() => window.scrollTo(0, 0), 0)} className="block">
+              <div key={seeker.id} onClick={() => { navigate(`/caregivers/${seeker.id}`); setTimeout(() => window.scrollTo(0, 0), 0); }} className="block cursor-pointer">
                 <div
                   className={`group rounded-2xl border p-6 card-lift cursor-pointer transition-colors ${
                     isDark
@@ -197,7 +198,7 @@ export default function JobSeekers() {
                     </button>
                   </div>
                 </div>
-              </Link>
+              </div>
               );
             })}
           </div>
