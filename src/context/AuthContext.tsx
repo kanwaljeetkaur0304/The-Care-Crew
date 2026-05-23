@@ -7,6 +7,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   role: UserRole;
 }
 
@@ -23,7 +24,8 @@ interface AuthContextType {
     name: string,
     email: string,
     password: string,
-    role: UserRole
+    role: UserRole,
+    phone?: string
   ) => Promise<AuthResult>;
   logout: () => Promise<void>;
   isLoading: boolean;
@@ -123,7 +125,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name: string,
       email: string,
       password: string,
-      role: UserRole
+      role: UserRole,
+      phone?: string
     ): Promise<AuthResult> => {
       if (!isSupabaseConfigured) {
         return { ok: false, error: 'Supabase is not configured. Add your keys to .env' };
@@ -137,6 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           data: {
             full_name: name,
             role,
+            phone,
           },
         },
       });

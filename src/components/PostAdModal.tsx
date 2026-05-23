@@ -1,10 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   X, Building2, User, MapPin, DollarSign, FileText,
-  CheckCircle2, ChevronRight, ChevronLeft, CreditCard,
+  CheckCircle2, ChevronRight, ChevronLeft,
   Calendar, ShieldCheck, Star, Briefcase, Plus, Trash2,
   Clock
 } from 'lucide-react';
+import { Elements } from '@stripe/react-stripe-js';
+import { getStripe } from '../config/stripe';
+import { supabase } from '../lib/supabase';
+import StripePaymentForm from './StripePaymentForm';
 import { categoryLabels } from '../data/mockData';
 import { useTheme } from '../context/ThemeContext';
 
@@ -73,10 +77,9 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
   });
   const [hDescription, setHDescription] = useState('');
   const [hSelectedPlan, setHSelectedPlan] = useState('');
-  const [hCardNumber, setHCardNumber] = useState('');
-  const [hCardExpiry, setHCardExpiry] = useState('');
-  const [hCardCvc, setHCardCvc] = useState('');
-  const [hCardName, setHCardName] = useState('');
+  const [hPaymentError, setHPaymentError] = useState('');
+  const [hClientSecret, setHClientSecret] = useState<string | null>(null);
+  const [hPaymentLoading, setHPaymentLoading] = useState(false);
 
   // ===== SEEKER FORM STATE =====
   const [sCategory, setSCategory] = useState('');
@@ -98,10 +101,9 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
   });
   const [sTerm, setSTerm] = useState('');
   const [sSelectedPlan, setSSelectedPlan] = useState('');
-  const [sCardNumber, setSCardNumber] = useState('');
-  const [sCardExpiry, setSCardExpiry] = useState('');
-  const [sCardCvc, setSCardCvc] = useState('');
-  const [sCardName, setSCardName] = useState('');
+  const [sPaymentError, setSPaymentError] = useState('');
+  const [sClientSecret, setSClientSecret] = useState<string | null>(null);
+  const [sPaymentLoading, setSPaymentLoading] = useState(false);
 
   const hLocationRef = useRef<HTMLDivElement>(null);
   const sLocationRef = useRef<HTMLDivElement>(null);
@@ -139,12 +141,12 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
     // Hiring
     setHTitle(''); setHCategory(''); setHLocationQuery(''); setHSelectedLocation(''); setHSalary('');
     setHScheduleDays({ Mon: { active: false, start: '09:00', end: '17:00' }, Tue: { active: false, start: '09:00', end: '17:00' }, Wed: { active: false, start: '09:00', end: '17:00' }, Thu: { active: false, start: '09:00', end: '17:00' }, Fri: { active: false, start: '09:00', end: '17:00' }, Sat: { active: false, start: '09:00', end: '17:00' }, Sun: { active: false, start: '09:00', end: '17:00' } });
-    setHDescription(''); setHSelectedPlan(''); setHCardNumber(''); setHCardExpiry(''); setHCardCvc(''); setHCardName('');
+    setHDescription(''); setHSelectedPlan(''); setHPaymentError(''); setHClientSecret(null); setHPaymentLoading(false);
     // Seeker
     setSCategory(''); setSBio(''); setSExperience(''); setSReferences([{ id: '1', name: '', phone: '' }]);
     setSLocationQuery(''); setSSelectedLocation(''); setSSalary('');
     setSScheduleDays({ Mon: { active: false, start: '09:00', end: '17:00' }, Tue: { active: false, start: '09:00', end: '17:00' }, Wed: { active: false, start: '09:00', end: '17:00' }, Thu: { active: false, start: '09:00', end: '17:00' }, Fri: { active: false, start: '09:00', end: '17:00' }, Sat: { active: false, start: '09:00', end: '17:00' }, Sun: { active: false, start: '09:00', end: '17:00' } });
-    setSTerm(''); setSSelectedPlan(''); setSCardNumber(''); setSCardExpiry(''); setSCardCvc(''); setSCardName('');
+    setSTerm(''); setSSelectedPlan(''); setSPaymentError(''); setSClientSecret(null); setSPaymentLoading(false);
   };
 
   if (!isOpen) return null;
@@ -189,7 +191,7 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
         case 3: return Object.values(hScheduleDays).some((d) => d.active);
         case 4: return hDescription.trim().length > 20;
         case 5: return hSelectedPlan;
-        case 6: return hCardNumber.length >= 16 && hCardExpiry && hCardCvc.length >= 3 && hCardName.trim();
+        case 6: return !!hClientSecret;
         default: return true;
       }
     } else {
@@ -201,17 +203,27 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
         case 5: return Object.values(sScheduleDays).some((d) => d.active);
         case 6: return sTerm;
         case 7: return sSelectedPlan;
-        case 8: return sCardNumber.length >= 16 && sCardExpiry && sCardCvc.length >= 3 && sCardName.trim();
+        case 8: return !!sClientSecret;
         default: return true;
       }
     }
   };
 
-  const handleNext = () => { if (step < totalSteps) setStep(step + 1); };
+  const handleNext = () => {
+    if (step < totalSteps) {
+      // If moving from plan step to payment step, initialize Stripe payment intent
+      if (adType === 'family' && step === 5 && hSelectedPlan) {
+        initializePaymentIntent('family', hSelectedPlan);
+      } else if (adType === 'seeker' && step === 7 && sSelectedPlan) {
+        initializePaymentIntent('seeker', sSelectedPlan);
+      }
+      setStep(step + 1);
+    }
+  };
   const handleBack = () => { if (step > 1) setStep(step - 1); };
 
-  const handleSubmit = () => {
-    if (adType === 'family') {
+  const handlePaymentSuccess = (type: 'family' | 'seeker') => {
+    if (type === 'family') {
       setSubmitted(true);
       setTimeout(() => {
         setSubmitted(false);
@@ -221,7 +233,6 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
         onClose();
       }, 3000);
     } else {
-      // Seeker: show success screen via submitted flag, then auto-close
       setSubmitted(true);
       setStep(9);
       setTimeout(() => {
@@ -231,6 +242,57 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
         resetAllForms();
         onClose();
       }, 3000);
+    }
+  };
+
+  const initializePaymentIntent = async (type: 'family' | 'seeker', planId: string) => {
+    const setLoading = type === 'family' ? setHPaymentLoading : setSPaymentLoading;
+    const setError = type === 'family' ? setHPaymentError : setSPaymentError;
+    const setSecret = type === 'family' ? setHClientSecret : setSClientSecret;
+
+    setLoading(true);
+    setError('');
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) {
+        setError('You must be logged in to post an ad.');
+        setLoading(false);
+        return;
+      }
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment-intent`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ planId }),
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Failed to initialize payment.');
+        setLoading(false);
+        return;
+      }
+
+      setSecret(data.clientSecret);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePaymentError = (type: 'family' | 'seeker', errorMsg: string) => {
+    if (type === 'family') {
+      setHPaymentError(errorMsg);
+    } else {
+      setSPaymentError(errorMsg);
     }
   };
 
@@ -280,7 +342,7 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
         <ChevronLeft className="w-4 h-4" />
         Back
       </button>
-      {step < totalSteps && !(adType === 'seeker' && step === 8) ? (
+      {step < totalSteps && !((adType === 'family' && step === 6) || (adType === 'seeker' && step === 8)) ? (
         <button
           type="button"
           onClick={handleNext}
@@ -292,19 +354,7 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
           Next
           <ChevronRight className="w-4 h-4" />
         </button>
-      ) : (
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={!canProceed()}
-          className={`flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-full text-sm font-medium transition-opacity btn-press ${
-            canProceed() ? 'bg-gradient-to-r from-maroon to-gold text-white shadow-lg shadow-maroon/20 hover:opacity-90' : 'bg-void-lighter text-ink-muted cursor-not-allowed'
-          }`}
-        >
-          Pay &amp; Post Ad
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      )}
+      ) : null}
     </div>
   );
 
@@ -529,32 +579,33 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
               {/* Step 6: Payment */}
               {step === 6 && (
                 <div className="space-y-5">
-                  <div className={`p-4 rounded-xl border mb-4 ${isDark ? 'bg-void border-void-border' : 'bg-light-bg border-light-border'}`}>
-                    <div className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Total to pay</div>
-                    <div className="font-display text-3xl font-bold text-gold">${HIRING_PLANS.find((p) => p.id === hSelectedPlan)?.price || 0}</div>
-                    <div className={`text-xs ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>{HIRING_PLANS.find((p) => p.id === hSelectedPlan)?.label} plan</div>
-                  </div>
-                  <div>
-                    <label className={labelClass}>Card Number</label>
-                    <div className="relative">
-                      <CreditCard className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
-                      <input type="text" value={hCardNumber} onChange={(e) => setHCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))} placeholder="1234 5678 9012 3456" className={inputClass} />
+                  {hPaymentError && (
+                    <div className="p-4 rounded-xl bg-red-50 border border-red-200">
+                      <p className="text-sm text-red-800">{hPaymentError}</p>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className={labelClass}>Expiry</label>
-                      <input type="text" value={hCardExpiry} onChange={(e) => { let v = e.target.value.replace(/\D/g, '').slice(0, 4); if (v.length >= 2) v = v.slice(0, 2) + '/' + v.slice(2); setHCardExpiry(v); }} placeholder="MM/YY" className={inputClass} />
+                  )}
+                  {hPaymentLoading && (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gold" />
                     </div>
-                    <div>
-                      <label className={labelClass}>CVC</label>
-                      <input type="text" value={hCardCvc} onChange={(e) => setHCardCvc(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="123" className={inputClass} />
+                  )}
+                  {hClientSecret ? (
+                    <Elements stripe={getStripe()} options={{ clientSecret: hClientSecret }}>
+                      <StripePaymentForm
+                        amount={HIRING_PLANS.find((p) => p.id === hSelectedPlan)?.price || 0}
+                        planLabel={`${HIRING_PLANS.find((p) => p.id === hSelectedPlan)?.label} plan`}
+                        onSuccess={() => handlePaymentSuccess('family')}
+                        onError={(err) => handlePaymentError('family', err)}
+                        isLoading={hPaymentLoading}
+                      />
+                    </Elements>
+                  ) : (
+                    <div className={`p-4 rounded-xl border ${isDark ? 'bg-void border-void-border' : 'bg-light-bg border-light-border'}`}>
+                      <div className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Total to pay</div>
+                      <div className="font-display text-3xl font-bold text-gold">${HIRING_PLANS.find((p) => p.id === hSelectedPlan)?.price || 0}</div>
+                      <div className={`text-xs ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>{HIRING_PLANS.find((p) => p.id === hSelectedPlan)?.label} plan</div>
                     </div>
-                  </div>
-                  <div>
-                    <label className={labelClass}>Name on Card</label>
-                    <input type="text" value={hCardName} onChange={(e) => setHCardName(e.target.value)} placeholder="John Smith" className={inputClass} />
-                  </div>
+                  )}
                   {renderNavButtons()}
                 </div>
               )}
@@ -765,32 +816,33 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
               {/* Step 8: Payment */}
               {step === 8 && (
                 <div className="space-y-5">
-                  <div className={`p-4 rounded-xl border mb-4 ${isDark ? 'bg-void border-void-border' : 'bg-light-bg border-light-border'}`}>
-                    <div className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Total to pay</div>
-                    <div className="font-display text-3xl font-bold text-gold">${SEEKER_PLANS.find((p) => p.id === sSelectedPlan)?.price || 0}</div>
-                    <div className={`text-xs ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>{SEEKER_PLANS.find((p) => p.id === sSelectedPlan)?.label} plan</div>
-                  </div>
-                  <div>
-                    <label className={labelClass}>Card Number</label>
-                    <div className="relative">
-                      <CreditCard className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
-                      <input type="text" value={sCardNumber} onChange={(e) => setSCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))} placeholder="1234 5678 9012 3456" className={inputClass} />
+                  {sPaymentError && (
+                    <div className="p-4 rounded-xl bg-red-50 border border-red-200">
+                      <p className="text-sm text-red-800">{sPaymentError}</p>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className={labelClass}>Expiry</label>
-                      <input type="text" value={sCardExpiry} onChange={(e) => { let v = e.target.value.replace(/\D/g, '').slice(0, 4); if (v.length >= 2) v = v.slice(0, 2) + '/' + v.slice(2); setSCardExpiry(v); }} placeholder="MM/YY" className={inputClass} />
+                  )}
+                  {sPaymentLoading && (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gold" />
                     </div>
-                    <div>
-                      <label className={labelClass}>CVC</label>
-                      <input type="text" value={sCardCvc} onChange={(e) => setSCardCvc(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="123" className={inputClass} />
+                  )}
+                  {sClientSecret ? (
+                    <Elements stripe={getStripe()} options={{ clientSecret: sClientSecret }}>
+                      <StripePaymentForm
+                        amount={SEEKER_PLANS.find((p) => p.id === sSelectedPlan)?.price || 0}
+                        planLabel={`${SEEKER_PLANS.find((p) => p.id === sSelectedPlan)?.label} plan`}
+                        onSuccess={() => handlePaymentSuccess('seeker')}
+                        onError={(err) => handlePaymentError('seeker', err)}
+                        isLoading={sPaymentLoading}
+                      />
+                    </Elements>
+                  ) : (
+                    <div className={`p-4 rounded-xl border ${isDark ? 'bg-void border-void-border' : 'bg-light-bg border-light-border'}`}>
+                      <div className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Total to pay</div>
+                      <div className="font-display text-3xl font-bold text-gold">${SEEKER_PLANS.find((p) => p.id === sSelectedPlan)?.price || 0}</div>
+                      <div className={`text-xs ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>{SEEKER_PLANS.find((p) => p.id === sSelectedPlan)?.label} plan</div>
                     </div>
-                  </div>
-                  <div>
-                    <label className={labelClass}>Name on Card</label>
-                    <input type="text" value={sCardName} onChange={(e) => setSCardName(e.target.value)} placeholder="John Smith" className={inputClass} />
-                  </div>
+                  )}
                   {renderNavButtons()}
                 </div>
               )}

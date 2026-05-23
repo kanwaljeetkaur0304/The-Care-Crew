@@ -29,7 +29,7 @@ function storeTheme(theme: Theme) {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(getStoredTheme);
+  const [theme, setTheme] = useState<Theme>(() => getStoredTheme());
 
   useEffect(() => {
     const root = document.documentElement;

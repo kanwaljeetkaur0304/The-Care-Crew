@@ -1,21 +1,73 @@
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
 
 export const CONTACT_PLANS = [
-  { id: '1m', label: '1 Month', price: 29, durationDays: 30, popular: false },
-  { id: '2m', label: '2 Months', price: 49, durationDays: 60, popular: true },
-  { id: '3m', label: '3 Months', price: 69, durationDays: 90, popular: false },
+  {
+    id: '1m',
+    label: '1 Month',
+    price: 29,
+    durationDays: 30,
+    popular: false,
+    tier: 'Basic',
+    features: [
+      { name: 'Access to 5 Job Listings', included: true },
+      { name: 'Phone Numbers Unlocked', included: true },
+      { name: 'Email Addresses Unlocked', included: true },
+      { name: 'Contact Details Export', included: false },
+      { name: 'Advanced Filters', included: false },
+      { name: 'Priority Support', included: false },
+      { name: 'Saved Searches', included: false },
+      { name: 'Candidate Profiles View', included: false },
+    ],
+  },
+  {
+    id: '2m',
+    label: '2 Months',
+    price: 49,
+    durationDays: 60,
+    popular: true,
+    tier: 'Standard',
+    features: [
+      { name: 'Access to 15 Job Listings', included: true },
+      { name: 'Phone Numbers Unlocked', included: true },
+      { name: 'Email Addresses Unlocked', included: true },
+      { name: 'Contact Details Export', included: true },
+      { name: 'Advanced Filters', included: true },
+      { name: 'Priority Support', included: false },
+      { name: 'Saved Searches', included: true },
+      { name: 'Candidate Profiles View', included: false },
+    ],
+  },
+  {
+    id: '3m',
+    label: '3 Months',
+    price: 69,
+    durationDays: 90,
+    popular: false,
+    tier: 'Premium',
+    features: [
+      { name: 'Access to 50 Job Listings', included: true },
+      { name: 'Phone Numbers Unlocked', included: true },
+      { name: 'Email Addresses Unlocked', included: true },
+      { name: 'Contact Details Export', included: true },
+      { name: 'Advanced Filters', included: true },
+      { name: 'Priority Support', included: true },
+      { name: 'Saved Searches (Unlimited)', included: true },
+      { name: 'Candidate Profiles View', included: true },
+    ],
+  },
 ];
 
 interface SubscriptionData {
   planId: string;
   purchasedAt: string;
   expiresAt: string;
+  stripePaymentIntentId?: string;
 }
 
 interface SubscriptionContextType {
   hasActiveSubscription: boolean;
   subscription: SubscriptionData | null;
-  purchaseSubscription: (planId: string) => void;
+  purchaseSubscription: (planId: string, paymentIntentId?: string) => void;
   expiryDate: string | null;
 }
 
@@ -64,7 +116,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     });
   }, [subscription]);
 
-  const purchaseSubscription = useCallback((planId: string) => {
+  const purchaseSubscription = useCallback((planId: string, paymentIntentId?: string) => {
     const plan = CONTACT_PLANS.find((p) => p.id === planId);
     if (!plan) return;
 
@@ -76,6 +128,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       planId: plan.id,
       purchasedAt: now.toISOString(),
       expiresAt: expires.toISOString(),
+      stripePaymentIntentId: paymentIntentId,
     };
 
     saveSubscription(data);

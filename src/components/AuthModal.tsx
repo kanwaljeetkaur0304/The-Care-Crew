@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Mail, Lock, Eye, EyeOff, Loader2, CheckCircle2, User } from 'lucide-react';
+import { X, Mail, Lock, Eye, EyeOff, Loader2, CheckCircle2, User, Phone } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -23,6 +23,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
     name: '',
     email: '',
     password: '',
+    phone: '',
     role: 'family' as 'family' | 'caregiver',
   });
 
@@ -37,7 +38,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
         setError('Password must be at least 6 characters');
         return;
       }
-      const result = await register(form.name, form.email, form.password, form.role);
+      const result = await register(form.name, form.email, form.password, form.role, form.phone);
       if (result.ok) {
         setEmailConfirmationSent(Boolean(result.needsEmailConfirmation));
         setSuccess(true);
@@ -70,7 +71,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
     setError('');
     setSuccess(false);
     setEmailConfirmationSent(false);
-    setForm({ name: '', email: '', password: '', role: 'family' });
+    setForm({ name: '', email: '', password: '', phone: '', role: 'family' });
   };
 
   const inputClass = `w-full pl-10 pr-4 py-3 border rounded-xl text-sm placeholder:text-opacity-60 ${
@@ -197,6 +198,22 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
                           value={form.name}
                           onChange={(e) => setForm({ ...form, name: e.target.value })}
                           placeholder="Jane Smith"
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Phone Number</label>
+                      <div className="relative">
+                        <Phone className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${
+                          isDark ? 'text-ink-muted' : 'text-light-text-muted'
+                        }`} />
+                        <input
+                          type="tel"
+                          value={form.phone}
+                          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                          placeholder="+1 (555) 123-4567"
                           className={inputClass}
                         />
                       </div>
