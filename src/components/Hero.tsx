@@ -127,7 +127,7 @@ export default function Hero({ onPostAd, onBrowse }: HeroProps) {
             </div>
           </div>
 
-          <div className="relative flex items-center justify-center animate-fade-up animate-delay-2 lg:translate-x-10 lg:-translate-y-8">
+          <div className="relative flex items-center justify-center animate-fade-up animate-delay-2 py-16 lg:py-0 lg:translate-x-10 lg:-translate-y-8">
             <div className="absolute w-[340px] h-[340px] md:w-[420px] md:h-[420px] rounded-full bg-gradient-to-br from-marigold/20 via-maroon/10 to-lotus/10 blur-2xl" />
             <div className="absolute w-[300px] h-[300px] md:w-[380px] md:h-[380px] rounded-full border-2 border-dashed border-marigold/60 animate-[spin_20s_linear_infinite]" />
             <div className="absolute w-[320px] h-[320px] md:w-[400px] md:h-[400px] rounded-full border-2 border-lotus/50 animate-[spin_30s_linear_infinite_reverse]" />
