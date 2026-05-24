@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Star, CheckCircle, Lock, Check } from 'lucide-react';
+import { X, Star, CheckCircle, Lock, Check, LogIn, UserPlus, ArrowLeft } from 'lucide-react';
 import { Elements } from '@stripe/react-stripe-js';
 import { useTheme } from '../context/ThemeContext';
 import { useSubscription, CONTACT_PLANS } from '../context/SubscriptionContext';
@@ -8,7 +8,6 @@ import { useUI } from '../context/UIContext';
 import { getStripe } from '../config/stripe';
 import { supabase } from '../lib/supabase';
 import StripePaymentForm from './StripePaymentForm';
-import LoginRequiredPrompt from './LoginRequiredPrompt';
 
 interface SubscriptionModalProps {
   isOpen: boolean;
@@ -20,7 +19,8 @@ export default function SubscriptionModal({ isOpen, onClose }: SubscriptionModal
   const { purchaseSubscription } = useSubscription();
   const { user } = useAuth();
   const { openAuthModal } = useUI();
-  const [step, setStep] = useState<'plans' | 'payment' | 'success'>('plans');
+  // 'auth' step is shown when user clicks Continue without being logged in
+  const [step, setStep] = useState<'plans' | 'auth' | 'payment' | 'success'>('plans');
   const [selectedPlan, setSelectedPlan] = useState('2m');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -28,31 +28,23 @@ export default function SubscriptionModal({ isOpen, onClose }: SubscriptionModal
 
   if (!isOpen) return null;
 
-  // Not logged in — show sign-in prompt immediately, skip the plans UI
-  if (!user) {
-    return (
-      <LoginRequiredPrompt
-        isOpen={isOpen}
-        onClose={onClose}
-        onSignIn={openAuthModal}
-        message="Sign in or create a free account to unlock caregiver contact details and manage your subscription."
-      />
-    );
-  }
-
   const plan = CONTACT_PLANS.find((p) => p.id === selectedPlan)!;
   const stripePromise = getStripe();
 
   const handleContinueToPayment = async () => {
+    // Not logged in → show auth step inline inside this modal
+    if (!user) {
+      setStep('auth');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
       if (!accessToken) {
-        // Shouldn't happen — guard above shows LoginRequiredPrompt first
-        onClose();
-        openAuthModal();
+        setStep('auth');
         setIsLoading(false);
         return;
       }
@@ -138,6 +130,7 @@ export default function SubscriptionModal({ isOpen, onClose }: SubscriptionModal
             <Lock className={`w-5 h-5 ${isDark ? 'text-gold' : 'text-maroon'}`} />
             <h3 className={`font-display text-lg font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>
               {step === 'plans' && 'Unlock Contact Details'}
+              {step === 'auth' && 'Sign In to Continue'}
               {step === 'payment' && 'Payment'}
               {step === 'success' && 'Subscription Active'}
             </h3>
@@ -246,6 +239,60 @@ export default function SubscriptionModal({ isOpen, onClose }: SubscriptionModal
                 className="w-full py-3.5 bg-gradient-to-r from-maroon to-gold text-white font-medium rounded-xl transition-all btn-press mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Loading...' : 'Continue to Payment'}
+              </button>
+            </div>
+          )}
+
+          {step === 'auth' && (
+            <div className="space-y-6 py-2">
+              <div className="text-center">
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-void-lighter' : 'bg-light-surface-2'}`}>
+                  <Lock className={`w-7 h-7 ${isDark ? 'text-gold' : 'text-maroon'}`} />
+                </div>
+                <p className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
+                  You're one step away from unlocking contact details. Sign in or create a free account to complete your purchase.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {/* Sign In button */}
+                <button
+                  onClick={() => {
+                    handleClose();
+                    openAuthModal();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-maroon to-gold text-white font-medium rounded-xl transition-all btn-press"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Sign In to Continue
+                </button>
+
+                {/* Register button */}
+                <button
+                  onClick={() => {
+                    handleClose();
+                    openAuthModal();
+                  }}
+                  className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl border font-medium transition-all btn-press ${
+                    isDark
+                      ? 'bg-void border-gold/40 text-gold hover:bg-gold/10'
+                      : 'bg-white border-maroon/30 text-maroon hover:bg-maroon/5'
+                  }`}
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Create a Free Account
+                </button>
+              </div>
+
+              {/* Back to Plans */}
+              <button
+                onClick={() => setStep('plans')}
+                className={`w-full flex items-center justify-center gap-1.5 text-sm font-medium transition-colors ${
+                  isDark ? 'text-ink-muted hover:text-ink-light' : 'text-light-text-muted hover:text-light-text-2'
+                }`}
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Back to Plans
               </button>
             </div>
           )}
