@@ -513,6 +513,7 @@ export interface CaregiverListing {
   location: string;
   rate: string;
   availability: AvailabilityType[];
+  weeklySchedule: Record<string, string[]>;
   experience: string;
   bio: string;
   languages: string[];
@@ -530,6 +531,14 @@ export const MOCK_CAREGIVER_LISTING: CaregiverListing = {
   location: 'Brampton, ON',
   rate: '$18/hr',
   availability: ['full-time', 'part-time'],
+  weeklySchedule: {
+    Monday:    ['Morning', 'Afternoon'],
+    Tuesday:   ['Morning', 'Afternoon'],
+    Wednesday: ['Morning', 'Afternoon', 'Evening'],
+    Thursday:  ['Afternoon'],
+    Friday:    ['Morning', 'Afternoon'],
+    Saturday:  ['Morning'],
+  },
   experience: '6 years',
   bio: 'I am a compassionate and experienced caregiver with over 6 years of experience working with children and elders in South Asian families. I speak Hindi, Punjabi, and English fluently and am comfortable with Indian cooking, traditions, and cultural practices.',
   languages: ['Hindi', 'Punjabi', 'English'],

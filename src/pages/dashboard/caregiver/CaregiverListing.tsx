@@ -9,6 +9,23 @@ import ListingSubscriptionModal from '../../../components/ListingSubscriptionMod
 
 const SKILL_OPTIONS = ['Indian Cooking', 'Homework Help', 'Medication Reminders', 'Elder Companionship', 'Creative Play', 'First Aid', 'Driving', 'House Cleaning', 'Laundry', 'Grocery Shopping'];
 
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAY_SHORT: Record<string, string> = {
+  Monday: 'Mon', Tuesday: 'Tue', Wednesday: 'Wed', Thursday: 'Thu',
+  Friday: 'Fri', Saturday: 'Sat', Sunday: 'Sun',
+};
+const TIME_SLOTS = ['Morning', 'Afternoon', 'Evening'];
+const SLOT_COLORS: Record<string, string> = {
+  Morning:   'bg-amber-100 text-amber-700 border-amber-200',
+  Afternoon: 'bg-sky-100 text-sky-700 border-sky-200',
+  Evening:   'bg-violet-100 text-violet-700 border-violet-200',
+};
+const SLOT_COLORS_DARK: Record<string, string> = {
+  Morning:   'bg-amber-900/30 text-amber-300 border-amber-700/40',
+  Afternoon: 'bg-sky-900/30 text-sky-300 border-sky-700/40',
+  Evening:   'bg-violet-900/30 text-violet-300 border-violet-700/40',
+};
+
 export default function CaregiverListing() {
   const { isDark } = useTheme();
   const { hasActiveListingSubscription, listingExpiryDate } = useSubscription();
@@ -21,6 +38,17 @@ export default function CaregiverListing() {
       ...p,
       skills: p.skills.includes(skill) ? p.skills.filter((s) => s !== skill) : [...p.skills, skill],
     }));
+  };
+
+  const toggleScheduleSlot = (day: string, slot: string) => {
+    setListing((p) => {
+      const current = p.weeklySchedule[day] ?? [];
+      const updated = current.includes(slot) ? current.filter((s) => s !== slot) : [...current, slot];
+      const next = { ...p.weeklySchedule };
+      if (updated.length === 0) delete next[day];
+      else next[day] = updated;
+      return { ...p, weeklySchedule: next };
+    });
   };
 
   const toggleStatus = () => {
@@ -211,6 +239,86 @@ export default function CaregiverListing() {
             );
           })}
         </div>
+      </div>
+
+      {/* Weekly Availability */}
+      <div className={`p-6 rounded-2xl border space-y-4 ${isDark ? 'bg-void-light border-void-border' : 'bg-white border-light-border'}`}>
+        <div>
+          <h4 className={`font-display font-semibold text-sm uppercase tracking-wide ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Weekly Availability</h4>
+          {editing && (
+            <p className={`text-xs mt-1 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
+              Tap a time slot to toggle it on or off for that day.
+            </p>
+          )}
+        </div>
+
+        {editing ? (
+          /* Edit mode: full 7-day × 3-slot grid */
+          <div className="space-y-2">
+            {/* Column headers */}
+            <div className="grid grid-cols-[80px_1fr_1fr_1fr] gap-1.5 items-center">
+              <div />
+              {TIME_SLOTS.map((slot) => (
+                <div key={slot} className={`text-center text-xs font-semibold uppercase tracking-wide py-1 rounded-lg ${isDark ? 'text-ink-muted bg-void' : 'text-light-text-muted bg-light-bg'}`}>
+                  {slot}
+                </div>
+              ))}
+            </div>
+
+            {DAYS.map((day) => {
+              const slots = listing.weeklySchedule[day] ?? [];
+              return (
+                <div key={day} className="grid grid-cols-[80px_1fr_1fr_1fr] gap-1.5 items-center">
+                  <div className={`text-xs font-semibold ${slots.length > 0 ? (isDark ? 'text-ink' : 'text-light-text') : (isDark ? 'text-ink-muted' : 'text-light-text-muted')}`}>
+                    {DAY_SHORT[day]}
+                  </div>
+                  {TIME_SLOTS.map((slot) => {
+                    const active = slots.includes(slot);
+                    return (
+                      <button
+                        key={slot}
+                        onClick={() => toggleScheduleSlot(day, slot)}
+                        className={`py-2 rounded-lg text-xs font-medium border transition-all ${
+                          active
+                            ? isDark ? SLOT_COLORS_DARK[slot] : SLOT_COLORS[slot]
+                            : isDark ? 'bg-void border-void-border text-ink-muted hover:border-void-border/80' : 'bg-light-bg border-light-border text-light-text-muted hover:bg-light-surface-2'
+                        }`}
+                      >
+                        {active ? '✓' : '–'}
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* View mode: list of active days with slot badges */
+          (() => {
+            const activeDays = DAYS.filter((d) => (listing.weeklySchedule[d] ?? []).length > 0);
+            return activeDays.length === 0 ? (
+              <p className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>No availability set yet.</p>
+            ) : (
+              <div className="space-y-2.5">
+                {activeDays.map((day) => (
+                  <div key={day} className="flex items-center gap-3">
+                    <span className={`w-[72px] shrink-0 text-sm font-medium ${isDark ? 'text-ink' : 'text-light-text'}`}>{day}</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(listing.weeklySchedule[day] ?? []).map((slot) => (
+                        <span
+                          key={slot}
+                          className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${isDark ? SLOT_COLORS_DARK[slot] : SLOT_COLORS[slot]}`}
+                        >
+                          {slot}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()
+        )}
       </div>
 
       {/* Certifications */}
