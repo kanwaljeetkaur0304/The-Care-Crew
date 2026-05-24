@@ -187,7 +187,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const busy = isLoading || bootstrapping;
+  // Only mark as loading when actively doing a login/register operation,
+  // NOT during the initial Supabase session bootstrap. This prevents the
+  // dashboard from showing an infinite spinner while getSession is in-flight.
+  const busy = isLoading;
 
   return (
     <AuthContext.Provider
