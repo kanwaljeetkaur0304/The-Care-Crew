@@ -74,13 +74,9 @@ function mapAuthError(message: string): string {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [bootstrapping, setBootstrapping] = useState(isSupabaseConfigured);
 
   useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setBootstrapping(false);
-      return;
-    }
+    if (!isSupabaseConfigured) return;
 
     let mounted = true;
 
@@ -88,11 +84,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(async ({ data: { session } }) => {
         if (!mounted) return;
         setUser(await userFromSession(session));
-        setBootstrapping(false);
       })
       .catch(() => {
-        // Supabase unreachable — unblock the UI
-        if (mounted) setBootstrapping(false);
+        // Supabase unreachable — silently ignore, user stays null
       });
 
     const {
