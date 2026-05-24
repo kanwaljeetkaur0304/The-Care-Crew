@@ -1,10 +1,13 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, Mail, Star, TrendingUp, ArrowRight, Sparkles, Camera, Award } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
+import { useContactRequests } from '../../../context/ContactRequestContext';
 import DashboardStatCard from '../../../components/dashboard/DashboardStatCard';
 import {
   MOCK_CAREGIVER_LISTING,
+  MOCK_CAREGIVER_PROFILE,
   MOCK_REVIEWS,
   MOCK_CAREGIVER_CONTACT_REQUESTS,
   MOCK_NOTIFICATIONS,
@@ -14,12 +17,30 @@ import {
 export default function CaregiverOverview() {
   const { isDark } = useTheme();
   const { user } = useAuth();
+  const { caregiverInbox } = useContactRequests();
   const navigate = useNavigate();
 
-  const pendingRequests = MOCK_CAREGIVER_CONTACT_REQUESTS.filter((r) => r.status === 'pending').length;
+  // ── Contact Requests: real inbox (from families who sent requests) + mock data ──
+  const allRequests = useMemo(
+    () => [...caregiverInbox, ...MOCK_CAREGIVER_CONTACT_REQUESTS],
+    [caregiverInbox]
+  );
+  const totalContactRequests = allRequests.length;
+  const pendingRequests = allRequests.filter((r) => r.status === 'pending').length;
+
+  // ── Avg Rating: calculated from reviews (accurate when reviews are real) ──
   const avgRating = MOCK_REVIEWS.length
     ? (MOCK_REVIEWS.reduce((a, r) => a + r.rating, 0) / MOCK_REVIEWS.length).toFixed(1)
     : '—';
+
+  // ── Profile Completion: from profile data ──
+  const profileCompletion = MOCK_CAREGIVER_PROFILE.profileCompletion;
+
+  // ── Job Matches: count of actual job matches array ──
+  const jobMatchCount = MOCK_JOB_MATCHES.length;
+
+  // NOTE: Profile Views (MOCK_CAREGIVER_LISTING.views) requires a backend to track
+  // accurately. It remains a mock value until Supabase view-tracking is wired up.
 
   const quickActions = [
     { label: 'Edit Listing', icon: TrendingUp, href: '/dashboard/listing', color: 'bg-maroon/10 text-maroon' },
@@ -46,10 +67,10 @@ export default function CaregiverOverview() {
           <div className={`text-sm font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>
             Profile Completion
           </div>
-          <span className="text-sm font-bold text-gold">{MOCK_CAREGIVER_LISTING ? 88 : 0}%</span>
+          <span className="text-sm font-bold text-gold">{profileCompletion}%</span>
         </div>
         <div className={`h-2.5 rounded-full overflow-hidden ${isDark ? 'bg-void-lighter' : 'bg-light-surface-2'}`}>
-          <div className="h-full bg-gradient-to-r from-maroon to-gold rounded-full" style={{ width: '88%' }} />
+          <div className="h-full bg-gradient-to-r from-maroon to-gold rounded-full" style={{ width: `${profileCompletion}%` }} />
         </div>
         <p className={`text-xs mt-2.5 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
           Add a profile photo to reach 100% and get 3× more contact requests
@@ -58,10 +79,14 @@ export default function CaregiverOverview() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Profile Views — mock until backend view-tracking is wired up */}
         <DashboardStatCard label="Profile Views" value={MOCK_CAREGIVER_LISTING.views} icon={Eye} trend="this month" trendUp color="maroon" />
-        <DashboardStatCard label="Contact Requests" value={MOCK_CAREGIVER_LISTING.contactRequests} icon={Mail} trend={`${pendingRequests} pending`} trendUp color="blue" />
+        {/* Contact Requests — real inbox (caregiverInbox) + seeded mock data */}
+        <DashboardStatCard label="Contact Requests" value={totalContactRequests} icon={Mail} trend={pendingRequests > 0 ? `${pendingRequests} pending` : 'all reviewed'} trendUp={pendingRequests > 0} color="blue" />
+        {/* Avg Rating — calculated from reviews array */}
         <DashboardStatCard label="Avg. Rating" value={avgRating} icon={Star} color="gold" />
-        <DashboardStatCard label="Job Matches" value={MOCK_JOB_MATCHES.length} icon={Sparkles} trend="new today" trendUp color="emerald" />
+        {/* Job Matches — real count from job matches data */}
+        <DashboardStatCard label="Job Matches" value={jobMatchCount} icon={Sparkles} trend="new today" trendUp color="emerald" />
       </div>
 
       {/* Quick Actions */}
