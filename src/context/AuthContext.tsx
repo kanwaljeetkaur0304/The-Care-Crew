@@ -84,11 +84,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let mounted = true;
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return;
-      setUser(await userFromSession(session));
-      setBootstrapping(false);
-    });
+    supabase.auth.getSession()
+      .then(async ({ data: { session } }) => {
+        if (!mounted) return;
+        setUser(await userFromSession(session));
+        setBootstrapping(false);
+      })
+      .catch(() => {
+        // Supabase unreachable — unblock the UI
+        if (mounted) setBootstrapping(false);
+      });
 
     const {
       data: { subscription },
