@@ -22,6 +22,7 @@ import AllJobs from './pages/AllJobs.tsx'
 import SafetyTips from './pages/SafetyTips.tsx'
 import { SubscriptionProvider } from './context/SubscriptionContext'
 import { ContactRequestProvider } from './context/ContactRequestContext'
+import { MessagesProvider } from './context/MessagesContext'
 
 import Pricing from './pages/Pricing.tsx'
 import ResumeTips from './pages/ResumeTips.tsx'
@@ -58,6 +59,7 @@ createRoot(document.getElementById('root')!).render(
           <LocationProvider>
             <SubscriptionProvider>
             <ContactRequestProvider>
+            <MessagesProvider>
               <ScrollToTop />
               <GlobalAuthModal />
               <Routes>
@@ -94,6 +96,7 @@ createRoot(document.getElementById('root')!).render(
                   <Route path="references" element={<CaregiverReferences />} />
                 </Route>
               </Routes>
+            </MessagesProvider>
             </ContactRequestProvider>
             </SubscriptionProvider>
           </LocationProvider>

@@ -1,40 +1,35 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Send, MessageSquare } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
-import { MOCK_MESSAGE_THREADS, type MessageThread } from '../../../data/dashboardMockData';
+import { useMessages } from '../../../context/MessagesContext';
+import type { MessageThread } from '../../../data/dashboardMockData';
 import DashboardEmptyState from '../../../components/dashboard/DashboardEmptyState';
 
 export default function FamilyMessages() {
   const { isDark } = useTheme();
-  const [threads, setThreads] = useState<MessageThread[]>(MOCK_MESSAGE_THREADS);
-  const [activeThread, setActiveThread] = useState<MessageThread | null>(threads[0] || null);
+  const { threads, sendMessage, markRead } = useMessages();
+  const [activeThread, setActiveThread] = useState<MessageThread | null>(null);
   const [newMessage, setNewMessage] = useState('');
+
+  // Keep activeThread in sync when threads update (e.g. after sending)
+  useEffect(() => {
+    if (!activeThread) {
+      setActiveThread(threads[0] ?? null);
+      return;
+    }
+    const updated = threads.find((t) => t.id === activeThread.id);
+    if (updated) setActiveThread(updated);
+  }, [threads]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSend = () => {
     if (!newMessage.trim() || !activeThread) return;
-    const msg = {
-      id: `m-${Date.now()}`,
-      senderId: 'me',
-      text: newMessage.trim(),
-      time: 'Just now',
-      status: 'sent' as const,
-    };
-    setThreads((prev) =>
-      prev.map((t) =>
-        t.id === activeThread.id
-          ? { ...t, messages: [...t.messages, msg], lastMessage: msg.text, lastTime: 'Just now', unread: 0 }
-          : t
-      )
-    );
-    setActiveThread((prev) =>
-      prev ? { ...prev, messages: [...prev.messages, msg], lastMessage: msg.text, lastTime: 'Just now' } : prev
-    );
+    sendMessage(activeThread.id, newMessage.trim());
     setNewMessage('');
   };
 
   const selectThread = (thread: MessageThread) => {
-    setThreads((prev) => prev.map((t) => t.id === thread.id ? { ...t, unread: 0 } : t));
-    setActiveThread({ ...thread, unread: 0 });
+    markRead(thread.id);
+    setActiveThread(thread);
   };
 
   const totalUnread = threads.reduce((acc, t) => acc + t.unread, 0);

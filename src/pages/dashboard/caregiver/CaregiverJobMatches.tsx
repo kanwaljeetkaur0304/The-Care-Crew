@@ -1,13 +1,9 @@
 import { useState } from 'react';
-import { Sparkles, MapPin, Calendar, BookmarkPlus, BookmarkCheck, ArrowRight, Filter, CheckCircle } from 'lucide-react';
+import { Sparkles, MapPin, Calendar, BookmarkPlus, BookmarkCheck, ArrowRight, Filter } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
-import { useAuth } from '../../../context/AuthContext';
-import { useSubscription } from '../../../context/SubscriptionContext';
-import { useContactRequests } from '../../../context/ContactRequestContext';
 import { MOCK_JOB_MATCHES, type JobMatch } from '../../../data/dashboardMockData';
 import DashboardEmptyState from '../../../components/dashboard/DashboardEmptyState';
-import SendRequestModal from '../../../components/SendRequestModal';
-import SubscriptionModal from '../../../components/SubscriptionModal';
+import ApplyModal from '../../../components/ApplyModal';
 
 const scoreColor = (score: number) => {
   if (score >= 90) return 'text-emerald-600 bg-emerald-100 border-emerald-200';
@@ -17,22 +13,13 @@ const scoreColor = (score: number) => {
 
 export default function CaregiverJobMatches() {
   const { isDark } = useTheme();
-  const { user } = useAuth();
-  const { hasActiveSubscription } = useSubscription();
-  const { hasSentTo } = useContactRequests();
   const [matches, setMatches] = useState<JobMatch[]>(MOCK_JOB_MATCHES);
   const [filter, setFilter] = useState<'all' | 'saved'>('all');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [applyJob, setApplyJob] = useState<JobMatch | null>(null);
-  const [showSubModal, setShowSubModal] = useState(false);
 
   const toggleSave = (id: string) => {
     setMatches((prev) => prev.map((m) => m.id === id ? { ...m, saved: !m.saved } : m));
-  };
-
-  const handleApply = (job: JobMatch) => {
-    if (!hasActiveSubscription) { setShowSubModal(true); return; }
-    setApplyJob(job);
   };
 
   const displayed = filter === 'saved' ? matches.filter((m) => m.saved) : matches;
@@ -127,18 +114,12 @@ export default function CaregiverJobMatches() {
                     {expanded === job.id ? 'Hide' : 'View Details'}
                   </button>
 
-                  {user && hasActiveSubscription && hasSentTo(user.id, job.id) ? (
-                    <div className={`flex items-center gap-1.5 text-xs px-4 py-1.5 rounded-lg font-semibold ${isDark ? 'bg-emerald-900/20 border border-emerald-700/30 text-emerald-400' : 'bg-emerald-50 border border-emerald-200 text-emerald-700'}`}>
-                      <CheckCircle className="w-3.5 h-3.5" /> Applied
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => handleApply(job)}
-                      className="flex items-center gap-1.5 text-xs px-4 py-1.5 rounded-lg bg-gradient-to-r from-maroon to-gold text-white font-semibold hover:opacity-90 transition-opacity btn-press shadow-md shadow-maroon/20"
-                    >
-                      Apply Now <ArrowRight className="w-3 h-3" />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setApplyJob(job)}
+                    className="flex items-center gap-1.5 text-xs px-4 py-1.5 rounded-lg bg-gradient-to-r from-maroon to-gold text-white font-semibold hover:opacity-90 transition-opacity btn-press shadow-md shadow-maroon/20"
+                  >
+                    Apply Now <ArrowRight className="w-3 h-3" />
+                  </button>
                 </div>
               </div>
 
@@ -152,21 +133,13 @@ export default function CaregiverJobMatches() {
         </div>
       )}
 
-      {/* Apply modal */}
       {applyJob && (
-        <SendRequestModal
+        <ApplyModal
           isOpen={!!applyJob}
           onClose={() => setApplyJob(null)}
-          targetId={applyJob.id}
-          targetName={applyJob.family}
-          targetRole="family"
-          targetCategory={applyJob.category}
-          targetLocation={applyJob.location}
+          job={applyJob}
         />
       )}
-
-      {/* Subscription gate */}
-      <SubscriptionModal isOpen={showSubModal} onClose={() => setShowSubModal(false)} />
     </div>
   );
 }
