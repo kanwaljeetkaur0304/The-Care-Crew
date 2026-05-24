@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { CreditCard, Check, ShieldCheck, Calendar, Zap, ArrowRight } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 import { MOCK_SUBSCRIPTION } from '../../../data/dashboardMockData';
 import { CONTACT_PLANS } from '../../../context/SubscriptionContext';
+import SubscriptionModal from '../../../components/SubscriptionModal';
 
 export default function FamilySubscription() {
   const { isDark } = useTheme();
   const sub = MOCK_SUBSCRIPTION;
+  const [showModal, setShowModal] = useState(false);
 
   const daysPercent = Math.round((sub.daysLeft / 60) * 100);
 
@@ -68,7 +71,10 @@ export default function FamilySubscription() {
           <p className={`text-sm mb-5 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
             Unlock phone numbers and email addresses for all caregiver profiles
           </p>
-          <button className="px-6 py-3 bg-gradient-to-r from-maroon to-gold text-white text-sm font-semibold rounded-full hover:opacity-90 transition-opacity btn-press shadow-md shadow-maroon/20">
+          <button
+            onClick={() => setShowModal(true)}
+            className="px-6 py-3 bg-gradient-to-r from-maroon to-gold text-white text-sm font-semibold rounded-full hover:opacity-90 transition-opacity btn-press shadow-md shadow-maroon/20"
+          >
             View Plans
           </button>
         </div>
@@ -133,11 +139,14 @@ export default function FamilySubscription() {
                     </div>
                   ))}
                 </div>
-                <button className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                  isCurrent
-                    ? isDark ? 'bg-void-lighter text-ink-muted cursor-default' : 'bg-light-surface-2 text-light-text-muted cursor-default'
-                    : 'bg-gradient-to-r from-maroon to-gold text-white hover:opacity-90 btn-press shadow-md shadow-maroon/20'
-                }`}>
+                <button
+                  onClick={() => !isCurrent && setShowModal(true)}
+                  className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                    isCurrent
+                      ? isDark ? 'bg-void-lighter text-ink-muted cursor-default' : 'bg-light-surface-2 text-light-text-muted cursor-default'
+                      : 'bg-gradient-to-r from-maroon to-gold text-white hover:opacity-90 btn-press shadow-md shadow-maroon/20'
+                  }`}
+                >
                   {isCurrent ? 'Current' : <span className="flex items-center justify-center gap-1.5">Select <ArrowRight className="w-3.5 h-3.5" /></span>}
                 </button>
               </div>
@@ -169,6 +178,8 @@ export default function FamilySubscription() {
           ))}
         </div>
       </div>
+
+      <SubscriptionModal isOpen={showModal} onClose={() => setShowModal(false)} />
     </div>
   );
 }
