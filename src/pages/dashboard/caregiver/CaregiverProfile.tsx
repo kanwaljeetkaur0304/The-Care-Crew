@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Edit2, Save, X, CheckCircle, AlertCircle, ShieldCheck, User, Mail, Phone, MapPin } from 'lucide-react';
+import { Edit2, Save, X, CheckCircle, AlertCircle, ShieldCheck, User, Mail, Phone, MapPin, Search, Plus } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 import { MOCK_CAREGIVER_PROFILE } from '../../../data/dashboardMockData';
 
@@ -12,10 +12,50 @@ const AVAIL_OPTIONS = [
   { value: 'live-in', label: 'Live-in' },
 ];
 
+const CERT_OPTIONS = [
+  'First Aid & CPR',
+  'First Aid Level 1',
+  'First Aid Level 2',
+  'AED / Defibrillator Training',
+  'Mental Health First Aid',
+  'Police Background Check',
+  'Vulnerable Sector Check',
+  'Child Safety Training',
+  'Child Protection Certificate',
+  'Infant & Toddler Care Certificate',
+  'Nanny Certificate',
+  'Early Childhood Education (ECE)',
+  'Personal Support Worker (PSW)',
+  'Home Support Worker Certificate',
+  'Elder Care Certificate',
+  'Dementia Care Certificate',
+  'Palliative Care Certificate',
+  'Alzheimer Care Training',
+  'Fall Prevention Certificate',
+  'Wound Care Certificate',
+  'Medication Administration',
+  'Autism Support Worker',
+  'Special Needs Care Certificate',
+  'Registered Nurse (RN)',
+  'Registered Practical Nurse (RPN)',
+  'Food Handler Certificate',
+  'Food Safe Level 1',
+  'Nutrition & Meal Planning',
+  'Cooking Certificate',
+  'Housekeeping Certificate',
+  'Driver\'s License (G)',
+  'Driver\'s License (G2)',
+  'WHMIS Certification',
+  'Safe Food Handling',
+  'Childcare Certificate',
+];
+
 export default function CaregiverProfile() {
   const { isDark } = useTheme();
   const [editing, setEditing] = useState(false);
   const [profile, setProfile] = useState(MOCK_CAREGIVER_PROFILE);
+
+  const [certSearch, setCertSearch] = useState('');
 
   const toggle = <T extends string>(arr: T[], val: T): T[] =>
     arr.includes(val) ? arr.filter((v) => v !== val) : [...arr, val];
@@ -229,14 +269,87 @@ export default function CaregiverProfile() {
       {/* Certifications */}
       <div className={`p-6 rounded-2xl border space-y-3 ${isDark ? 'bg-void-light border-void-border' : 'bg-white border-light-border'}`}>
         <h4 className={`font-display font-semibold text-sm uppercase tracking-wide ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Certifications</h4>
-        <div className="space-y-2">
-          {profile.certifications.map((cert) => (
-            <div key={cert} className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-              <span className={`text-sm ${isDark ? 'text-ink-light' : 'text-light-text-2'}`}>{cert}</span>
+
+        {editing ? (
+          <div className="space-y-4">
+            {/* Selected certs as removable chips */}
+            {profile.certifications.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {profile.certifications.map((cert) => (
+                  <div
+                    key={cert}
+                    className="flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-maroon to-gold text-white"
+                  >
+                    <span>{cert}</span>
+                    <button
+                      onClick={() => setProfile((p) => ({ ...p, certifications: p.certifications.filter((c) => c !== cert) }))}
+                      className="hover:opacity-70 transition-opacity ml-0.5"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Search input */}
+            <div className="relative">
+              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+              <input
+                type="text"
+                value={certSearch}
+                onChange={(e) => setCertSearch(e.target.value)}
+                placeholder="Search certifications..."
+                className={`w-full text-sm pl-9 pr-3 py-2 rounded-lg border outline-none ${isDark ? 'bg-void border-void-border text-ink placeholder:text-ink-muted' : 'bg-light-bg border-light-border text-light-text placeholder:text-light-text-muted'}`}
+              />
             </div>
-          ))}
-        </div>
+
+            {/* Filtered unselected options */}
+            {(() => {
+              const filtered = CERT_OPTIONS.filter(
+                (c) =>
+                  !profile.certifications.includes(c) &&
+                  c.toLowerCase().includes(certSearch.toLowerCase())
+              );
+              return filtered.length > 0 ? (
+                <div className={`max-h-48 overflow-y-auto rounded-xl border p-3 space-y-1 ${isDark ? 'bg-void border-void-border' : 'bg-light-bg border-light-border'}`}>
+                  {filtered.map((cert) => (
+                    <button
+                      key={cert}
+                      onClick={() => {
+                        setProfile((p) => ({ ...p, certifications: [...p.certifications, cert] }));
+                        setCertSearch('');
+                      }}
+                      className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors ${
+                        isDark
+                          ? 'text-ink-light hover:bg-void-lighter hover:text-ink'
+                          : 'text-light-text-2 hover:bg-light-surface-2 hover:text-light-text'
+                      }`}
+                    >
+                      <Plus className={`w-3.5 h-3.5 shrink-0 ${isDark ? 'text-gold' : 'text-maroon'}`} />
+                      {cert}
+                    </button>
+                  ))}
+                </div>
+              ) : certSearch ? (
+                <p className={`text-xs ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>No matching certifications found.</p>
+              ) : null;
+            })()}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {profile.certifications.length === 0 ? (
+              <p className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>No certifications added yet.</p>
+            ) : (
+              profile.certifications.map((cert) => (
+                <div key={cert} className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span className={`text-sm ${isDark ? 'text-ink-light' : 'text-light-text-2'}`}>{cert}</span>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       {editing && (
