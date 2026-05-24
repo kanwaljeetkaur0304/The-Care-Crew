@@ -3,13 +3,16 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { Menu, Bell, Sun, Moon, Plus } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { useSubscription } from '../../context/SubscriptionContext';
 import { MOCK_NOTIFICATIONS } from '../../data/dashboardMockData';
 import DashboardSidebar from './DashboardSidebar';
+import SubscriptionExpiredGate from './SubscriptionExpiredGate';
 
 export default function DashboardLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { isDark, toggleTheme } = useTheme();
   const { user } = useAuth();
+  const { hasActiveSubscription, hasActiveListingSubscription } = useSubscription();
   const navigate = useNavigate();
 
   const unreadCount = MOCK_NOTIFICATIONS.filter((n) => !n.read).length;
@@ -17,6 +20,12 @@ export default function DashboardLayout() {
   if (!user) {
     navigate('/');
     return null;
+  }
+
+  // Gate: at least one subscription must be active to enter the dashboard
+  const hasAnySubscription = hasActiveSubscription || hasActiveListingSubscription;
+  if (!hasAnySubscription) {
+    return <SubscriptionExpiredGate />;
   }
 
   return (
