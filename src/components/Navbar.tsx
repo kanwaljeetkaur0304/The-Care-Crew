@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Menu, X, HeartHandshake, LogOut, ChevronDown, MapPin, Search, Sun, Moon } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Menu, X, HeartHandshake, LogOut, ChevronDown, MapPin, Search, Sun, Moon, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
 import { useTheme } from '../context/ThemeContext';
@@ -34,6 +34,7 @@ export default function Navbar({ onPostAd, onAuth }: NavbarProps) {
   const { user, logout } = useAuth();
   const { selectedCity, setSelectedCity } = useLocation();
   const { isDark, toggleTheme } = useTheme();
+  const navigate = useNavigate();
 
   const navLinks = [
     { label: 'Browse Jobs', href: '#listings' },
@@ -301,6 +302,20 @@ export default function Navbar({ onPostAd, onAuth }: NavbarProps) {
                       <button
                         onClick={() => {
                           setUserMenuOpen(false);
+                          navigate('/dashboard');
+                        }}
+                        className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
+                          isDark
+                            ? 'text-ink-light hover:text-gold hover:bg-void-lighter'
+                            : 'text-light-text-2 hover:text-maroon hover:bg-light-surface-2'
+                        }`}
+                      >
+                        <LayoutDashboard className="w-4 h-4" />
+                        My Dashboard
+                      </button>
+                      <button
+                        onClick={() => {
+                          setUserMenuOpen(false);
                           logout();
                         }}
                         className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
@@ -453,6 +468,20 @@ export default function Navbar({ onPostAd, onAuth }: NavbarProps) {
                   <div className={`text-xs capitalize ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>{user.role}</div>
                 </div>
               </div>
+              <button
+                onClick={() => {
+                  setMobileOpen(false);
+                  navigate('/dashboard');
+                }}
+                className={`w-full flex items-center justify-center gap-2 px-5 py-2.5 border text-sm font-medium rounded-full ${
+                  isDark
+                    ? 'bg-void-lighter border-void-border text-ink'
+                    : 'bg-light-surface-2 border-light-border text-light-text'
+                }`}
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                My Dashboard
+              </button>
               <button
                 onClick={() => {
                   setMobileOpen(false);
