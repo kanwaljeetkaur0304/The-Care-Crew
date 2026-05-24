@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Edit2, Save, X, CheckCircle, AlertCircle, ShieldCheck, User, Mail, Phone, MapPin, Search, Plus } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Edit2, Save, X, CheckCircle, AlertCircle, ShieldCheck, User, Mail, Phone, MapPin, Search, Plus, Camera } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 import { MOCK_CAREGIVER_PROFILE } from '../../../data/dashboardMockData';
 
@@ -88,6 +88,18 @@ export default function CaregiverProfile() {
 
   const [certSearch, setCertSearch] = useState('');
   const [skillSearch, setSkillSearch] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setAvatarUrl(reader.result as string);
+    reader.readAsDataURL(file);
+    // reset so the same file can be re-selected if needed
+    e.target.value = '';
+  };
 
   const toggle = <T extends string>(arr: T[], val: T): T[] =>
     arr.includes(val) ? arr.filter((v) => v !== val) : [...arr, val];
@@ -119,12 +131,40 @@ export default function CaregiverProfile() {
       {/* Avatar & Verification */}
       <div className={`p-6 rounded-2xl border ${isDark ? 'bg-void-light border-void-border' : 'bg-white border-light-border'}`}>
         <div className="flex items-center gap-5">
-          <div className="relative">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-maroon to-gold flex items-center justify-center text-2xl font-bold text-white">
-              {profile.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)}
-            </div>
+          <div className="relative group">
+            {/* Hidden file input */}
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
+
+            {/* Avatar circle */}
+            <button
+              type="button"
+              onClick={() => avatarInputRef.current?.click()}
+              className="w-20 h-20 rounded-full overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+              title="Change profile photo"
+            >
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-maroon to-gold flex items-center justify-center text-2xl font-bold text-white">
+                  {profile.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)}
+                </div>
+              )}
+
+              {/* Camera overlay on hover */}
+              <div className="absolute inset-0 rounded-full bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Camera className="w-5 h-5 text-white" />
+                <span className="text-white text-[10px] font-medium mt-0.5">Change</span>
+              </div>
+            </button>
+
             {profile.backgroundCheck && (
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center border-2 border-white">
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center border-2 border-white z-10">
                 <ShieldCheck className="w-3.5 h-3.5 text-white" />
               </div>
             )}
