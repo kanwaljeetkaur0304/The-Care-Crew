@@ -11,6 +11,9 @@ import { supabase } from '../lib/supabase';
 import StripePaymentForm from './StripePaymentForm';
 import { categoryLabels } from '../data/mockData';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import { useUI } from '../context/UIContext';
+import LoginRequiredPrompt from './LoginRequiredPrompt';
 
 const ALL_CITIES = [
   'Toronto, ON', 'Vancouver, BC', 'Montreal, QC', 'Calgary, AB', 'Edmonton, AB',
@@ -58,6 +61,8 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
   const { isDark } = useTheme();
+  const { user } = useAuth();
+  const { openAuthModal } = useUI();
 
   // ===== HIRING FORM STATE =====
   const [hTitle, setHTitle] = useState('');
@@ -161,6 +166,19 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
   };
 
   if (!isOpen) return null;
+
+  // Not logged in — show sign-in prompt instead of ad form
+  if (!user) {
+    return (
+      <LoginRequiredPrompt
+        isOpen={isOpen}
+        onClose={onClose}
+        onSignIn={openAuthModal}
+        message="Sign in or create a free account to post a job ad and connect with caregivers."
+      />
+    );
+  }
+
 
   const categories = Object.entries(categoryLabels).map(([key, label]) => ({ key, label }));
 
@@ -267,7 +285,9 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
       if (!accessToken) {
-        setError('You must be logged in to post an ad.');
+        // Shouldn't happen — guard above shows LoginRequiredPrompt first
+        onClose();
+        openAuthModal();
         setLoading(false);
         return;
       }

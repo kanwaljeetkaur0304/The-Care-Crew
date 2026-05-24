@@ -3,9 +3,12 @@ import { X, Star, CheckCircle, Lock, Check } from 'lucide-react';
 import { Elements } from '@stripe/react-stripe-js';
 import { useTheme } from '../context/ThemeContext';
 import { useSubscription, CONTACT_PLANS } from '../context/SubscriptionContext';
+import { useAuth } from '../context/AuthContext';
+import { useUI } from '../context/UIContext';
 import { getStripe } from '../config/stripe';
 import { supabase } from '../lib/supabase';
 import StripePaymentForm from './StripePaymentForm';
+import LoginRequiredPrompt from './LoginRequiredPrompt';
 
 interface SubscriptionModalProps {
   isOpen: boolean;
@@ -15,6 +18,8 @@ interface SubscriptionModalProps {
 export default function SubscriptionModal({ isOpen, onClose }: SubscriptionModalProps) {
   const { isDark } = useTheme();
   const { purchaseSubscription } = useSubscription();
+  const { user } = useAuth();
+  const { openAuthModal } = useUI();
   const [step, setStep] = useState<'plans' | 'payment' | 'success'>('plans');
   const [selectedPlan, setSelectedPlan] = useState('2m');
   const [error, setError] = useState('');
@@ -22,6 +27,18 @@ export default function SubscriptionModal({ isOpen, onClose }: SubscriptionModal
   const [clientSecret, setClientSecret] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  // Not logged in — show sign-in prompt immediately, skip the plans UI
+  if (!user) {
+    return (
+      <LoginRequiredPrompt
+        isOpen={isOpen}
+        onClose={onClose}
+        onSignIn={openAuthModal}
+        message="Sign in or create a free account to unlock caregiver contact details and manage your subscription."
+      />
+    );
+  }
 
   const plan = CONTACT_PLANS.find((p) => p.id === selectedPlan)!;
   const stripePromise = getStripe();
@@ -33,7 +50,9 @@ export default function SubscriptionModal({ isOpen, onClose }: SubscriptionModal
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
       if (!accessToken) {
-        setError('You must be logged in to subscribe.');
+        // Shouldn't happen — guard above shows LoginRequiredPrompt first
+        onClose();
+        openAuthModal();
         setIsLoading(false);
         return;
       }

@@ -7,12 +7,12 @@ import JobSeekers from './components/JobSeekers';
 import HowItWorks from './components/HowItWorks';
 import UrgentHire from './components/UrgentHire';
 import PostAdModal from './components/PostAdModal';
-import AuthModal from './components/AuthModal';
 import Footer from './components/Footer';
+import { useUI } from './context/UIContext';
 
 function App() {
   const [postAdOpen, setPostAdOpen] = useState(false);
-  const [authOpen, setAuthOpen] = useState(false);
+  const { openAuthModal } = useUI();
 
   const scrollTo = (id: string) => {
     const el = document.querySelector(id);
@@ -25,7 +25,7 @@ function App() {
 
   return (
     <div className="min-h-screen transition-colors duration-300">
-      <Navbar onPostAd={handlePostAd} onAuth={() => setAuthOpen(true)} />
+      <Navbar onPostAd={handlePostAd} onAuth={openAuthModal} />
       <Hero onPostAd={handlePostAd} onBrowse={() => scrollTo('#listings')} />
       <Categories />
       <UrgentHire />
@@ -35,7 +35,6 @@ function App() {
       <Footer />
 
       <PostAdModal isOpen={postAdOpen} onClose={() => setPostAdOpen(false)} />
-      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
     </div>
   );
 }

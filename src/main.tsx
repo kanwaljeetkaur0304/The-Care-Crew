@@ -10,6 +10,8 @@ function ScrollToTop() {
 import { ThemeProvider } from './context/ThemeContext'
 import { AuthProvider } from './context/AuthContext'
 import { LocationProvider } from './context/LocationContext'
+import { UIProvider } from './context/UIContext'
+import GlobalAuthModal from './components/GlobalAuthModal'
 import './index.css'
 import App from './App.tsx'
 import AllCaregivers from './pages/AllCaregivers.tsx'
@@ -51,9 +53,11 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
+          <UIProvider>
           <LocationProvider>
             <SubscriptionProvider>
               <ScrollToTop />
+              <GlobalAuthModal />
               <Routes>
                 <Route path="/" element={<App />} />
                 <Route path="/caregivers" element={<AllCaregivers />} />
@@ -90,6 +94,7 @@ createRoot(document.getElementById('root')!).render(
               </Routes>
             </SubscriptionProvider>
           </LocationProvider>
+          </UIProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>
