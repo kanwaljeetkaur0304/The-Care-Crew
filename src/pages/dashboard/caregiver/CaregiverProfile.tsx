@@ -50,12 +50,44 @@ const CERT_OPTIONS = [
   'Childcare Certificate',
 ];
 
+const SKILL_OPTIONS = [
+  // Child & Family Care
+  'Infant Care', 'Toddler Care', 'Newborn Care', 'Babysitting',
+  'Homework Help', 'Tutoring', 'Creative Play', 'Arts & Crafts',
+  'Bedtime Routines', 'Potty Training', 'Montessori Activities',
+  // Elder & Personal Care
+  'Elder Companionship', 'Personal Hygiene Assistance', 'Mobility Assistance',
+  'Medication Reminders', 'Appointment Scheduling', 'Memory Care Support',
+  'Palliative Support', 'Physiotherapy Assistance', 'Wound Dressing',
+  // Household
+  'Indian Cooking', 'South Asian Cooking', 'Vegetarian Cooking',
+  'Meal Prep', 'Grocery Shopping', 'Laundry & Ironing',
+  'Deep Cleaning', 'General Housekeeping', 'Organization',
+  'Dishwashing', 'Vacuuming & Mopping', 'Bathroom Cleaning',
+  // Driving & Errands
+  'Driving / Chauffeur', 'School Pick-up & Drop-off',
+  'Errand Running', 'Pet Care', 'Dog Walking',
+  // Language & Cultural
+  'Bilingual Communication', 'Cultural Meal Preparation',
+  'Religious / Cultural Sensitivity', 'Sign Language (ASL)',
+  // Tech & Admin
+  'Basic Tech Support', 'Video Call Setup', 'Record Keeping',
+  'Online Grocery Ordering', 'Calendar Management',
+  // Special Needs
+  'ABA Therapy Support', 'Sensory Play', 'Special Needs Support',
+  'Behavioral Support', 'Speech Therapy Assistance',
+  // Fitness & Wellness
+  'Yoga / Exercise Assistance', 'Physiotherapy Exercises',
+  'Nutritional Meal Planning', 'Hydrotherapy Assistance',
+];
+
 export default function CaregiverProfile() {
   const { isDark } = useTheme();
   const [editing, setEditing] = useState(false);
   const [profile, setProfile] = useState(MOCK_CAREGIVER_PROFILE);
 
   const [certSearch, setCertSearch] = useState('');
+  const [skillSearch, setSkillSearch] = useState('');
 
   const toggle = <T extends string>(arr: T[], val: T): T[] =>
     arr.includes(val) ? arr.filter((v) => v !== val) : [...arr, val];
@@ -346,6 +378,96 @@ export default function CaregiverProfile() {
                   <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
                   <span className={`text-sm ${isDark ? 'text-ink-light' : 'text-light-text-2'}`}>{cert}</span>
                 </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Skills */}
+      <div className={`p-6 rounded-2xl border space-y-3 ${isDark ? 'bg-void-light border-void-border' : 'bg-white border-light-border'}`}>
+        <h4 className={`font-display font-semibold text-sm uppercase tracking-wide ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Skills</h4>
+
+        {editing ? (
+          <div className="space-y-4">
+            {/* Selected skills as removable chips */}
+            {profile.skills.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {profile.skills.map((skill) => (
+                  <div
+                    key={skill}
+                    className="flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-maroon to-gold text-white"
+                  >
+                    <span>{skill}</span>
+                    <button
+                      onClick={() => setProfile((p) => ({ ...p, skills: p.skills.filter((s) => s !== skill) }))}
+                      className="hover:opacity-70 transition-opacity ml-0.5"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Search input */}
+            <div className="relative">
+              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+              <input
+                type="text"
+                value={skillSearch}
+                onChange={(e) => setSkillSearch(e.target.value)}
+                placeholder="Search skills..."
+                className={`w-full text-sm pl-9 pr-3 py-2 rounded-lg border outline-none ${isDark ? 'bg-void border-void-border text-ink placeholder:text-ink-muted' : 'bg-light-bg border-light-border text-light-text placeholder:text-light-text-muted'}`}
+              />
+            </div>
+
+            {/* Filtered unselected options */}
+            {(() => {
+              const filtered = SKILL_OPTIONS.filter(
+                (s) =>
+                  !profile.skills.includes(s) &&
+                  s.toLowerCase().includes(skillSearch.toLowerCase())
+              );
+              return filtered.length > 0 ? (
+                <div className={`max-h-48 overflow-y-auto rounded-xl border p-3 space-y-1 ${isDark ? 'bg-void border-void-border' : 'bg-light-bg border-light-border'}`}>
+                  {filtered.map((skill) => (
+                    <button
+                      key={skill}
+                      onClick={() => {
+                        setProfile((p) => ({ ...p, skills: [...p.skills, skill] }));
+                        setSkillSearch('');
+                      }}
+                      className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors ${
+                        isDark
+                          ? 'text-ink-light hover:bg-void-lighter hover:text-ink'
+                          : 'text-light-text-2 hover:bg-light-surface-2 hover:text-light-text'
+                      }`}
+                    >
+                      <Plus className={`w-3.5 h-3.5 shrink-0 ${isDark ? 'text-gold' : 'text-maroon'}`} />
+                      {skill}
+                    </button>
+                  ))}
+                </div>
+              ) : skillSearch ? (
+                <p className={`text-xs ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>No matching skills found.</p>
+              ) : null;
+            })()}
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {profile.skills.length === 0 ? (
+              <p className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>No skills added yet.</p>
+            ) : (
+              profile.skills.map((skill) => (
+                <span
+                  key={skill}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border ${
+                    isDark ? 'bg-void border-void-border text-ink-light' : 'bg-light-bg border-light-border text-light-text-2'
+                  }`}
+                >
+                  {skill}
+                </span>
               ))
             )}
           </div>
