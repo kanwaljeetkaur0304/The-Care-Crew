@@ -89,9 +89,25 @@ export default function CaregiverDetail() {
               </span>
               <span className={`text-xs ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Posted {seeker.postedDate}</span>
             </div>
-            <h1 className={`font-display text-3xl md:text-4xl font-semibold mb-2 ${isDark ? 'text-ink' : 'text-light-text'}`}>
-              {seeker.name}
-            </h1>
+            <div className="flex items-center justify-between gap-4 flex-wrap mb-2">
+              <h1 className={`font-display text-3xl md:text-4xl font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>
+                {seeker.name}
+              </h1>
+              {user && hasActiveSubscription && (
+                hasSentTo(user.id, seeker.id) ? (
+                  <div className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium ${isDark ? 'bg-emerald-900/20 border border-emerald-700/30 text-emerald-400' : 'bg-emerald-50 border border-emerald-200 text-emerald-700'}`}>
+                    <CheckCircle className="w-4 h-4 shrink-0" /> Request Sent
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowRequestModal(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-maroon to-gold text-white text-sm font-semibold rounded-full hover:opacity-90 transition-opacity btn-press shadow-md shadow-maroon/20 shrink-0"
+                  >
+                    <Send className="w-4 h-4" /> Send Request
+                  </button>
+                )
+              )}
+            </div>
             <div className="flex flex-wrap items-center gap-4">
               <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-ink-light' : 'text-light-text-2'}`}>
                 <MapPin className={`w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
@@ -138,38 +154,6 @@ export default function CaregiverDetail() {
           </div>
         </div>
 
-        {/* Connect — visible to everyone, gated behind subscription */}
-        <div className={`rounded-2xl border p-6 mb-6 ${isDark ? 'bg-void border-void-border' : 'bg-white border-light-border'}`}>
-          <div className="flex items-center gap-2 mb-3">
-            <Send className={`w-5 h-5 ${isDark ? 'text-gold' : 'text-maroon'}`} />
-            <h2 className={`font-display text-lg font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>
-              Connect with {seeker.name.split(' ')[0]}
-            </h2>
-          </div>
-          <p className={`text-sm mb-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
-            Send {seeker.name.split(' ')[0]} a message. Your request will appear in their dashboard inbox and they can accept or decline.
-          </p>
-          {user && hasSentTo(user.id, seeker.id) ? (
-            <div className={`flex items-center gap-2 py-3 px-4 rounded-xl text-sm font-medium ${isDark ? 'bg-emerald-900/20 border border-emerald-700/30 text-emerald-400' : 'bg-emerald-50 border border-emerald-200 text-emerald-700'}`}>
-              <CheckCircle className="w-4 h-4 shrink-0" />
-              Request already sent to {seeker.name.split(' ')[0]}
-            </div>
-          ) : (
-            <button
-              onClick={() => {
-                if (!hasActiveSubscription) {
-                  setShowModal(true);
-                } else {
-                  setShowRequestModal(true);
-                }
-              }}
-              className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-maroon to-gold text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity btn-press shadow-md shadow-maroon/20"
-            >
-              <Send className="w-4 h-4" />
-              Send Contact Request
-            </button>
-          )}
-        </div>
 
         {/* Contact Section */}
         <div className={`rounded-2xl border p-6 ${isDark ? 'bg-void border-void-border' : 'bg-white border-light-border'}`}>
@@ -249,11 +233,7 @@ export default function CaregiverDetail() {
         </div>
       </main>
 
-      <SubscriptionModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        contextMessage={`To connect with ${seeker.name.split(' ')[0]}, please subscribe to a plan to continue. You can then send a contact request directly.`}
-      />
+      <SubscriptionModal isOpen={showModal} onClose={() => setShowModal(false)} />
       <SendRequestModal
         isOpen={showRequestModal}
         onClose={() => setShowRequestModal(false)}
