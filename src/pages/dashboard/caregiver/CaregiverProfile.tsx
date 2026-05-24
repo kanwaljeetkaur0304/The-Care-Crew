@@ -156,8 +156,8 @@ export default function CaregiverProfile() {
                 </div>
               )}
 
-              {/* Camera overlay on hover */}
-              <div className="absolute inset-0 rounded-full bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              {/* Camera overlay — always visible in edit mode, hover-only otherwise */}
+              <div className={`absolute inset-0 rounded-full bg-black/40 flex flex-col items-center justify-center transition-opacity ${editing ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                 <Camera className="w-5 h-5 text-white" />
                 <span className="text-white text-[10px] font-medium mt-0.5">Change</span>
               </div>
