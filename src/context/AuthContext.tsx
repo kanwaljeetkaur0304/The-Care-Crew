@@ -28,6 +28,7 @@ interface AuthContextType {
     phone?: string
   ) => Promise<AuthResult>;
   logout: () => Promise<void>;
+  loginAsDemo: (role: UserRole) => void;
   isLoading: boolean;
   isConfigured: boolean;
 }
@@ -172,6 +173,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
+  const loginAsDemo = useCallback((role: UserRole) => {
+    setUser({
+      id: 'demo-user',
+      name: role === 'caregiver' ? 'Priya Sharma' : 'Kanwal Kaur',
+      email: role === 'caregiver' ? 'priya@demo.com' : 'kanwal@demo.com',
+      role,
+    });
+  }, []);
+
   const busy = isLoading || bootstrapping;
 
   return (
@@ -181,6 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        loginAsDemo,
         isLoading: busy,
         isConfigured: isSupabaseConfigured,
       }}
