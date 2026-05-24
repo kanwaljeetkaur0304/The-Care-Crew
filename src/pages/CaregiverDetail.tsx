@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   MapPin, Star, DollarSign, Clock, Award, ArrowLeft,
@@ -9,6 +9,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useAuth } from '../context/AuthContext';
 import { useContactRequests } from '../context/ContactRequestContext';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import SubscriptionModal from '../components/SubscriptionModal';
 import SendRequestModal from '../components/SendRequestModal';
 
@@ -23,6 +24,12 @@ export default function CaregiverDetail() {
 
   const seeker = useMemo(() => {
     return jobSeekers.find((s) => s.id === id);
+  }, [id]);
+
+  // ── Track profile view in Supabase ──────────────────────────────────────────
+  useEffect(() => {
+    if (!id || !isSupabaseConfigured) return;
+    supabase.from('profile_views').insert({ caregiver_id: id }).then();
   }, [id]);
 
   if (!seeker) {

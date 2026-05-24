@@ -69,6 +69,23 @@ export type Database = {
         };
         Relationships: [];
       };
+      profile_views: {
+        Row: {
+          id: string;
+          caregiver_id: string;
+          viewed_at: string;
+        };
+        Insert: {
+          id?: string;
+          caregiver_id: string;
+          viewed_at?: string;
+        };
+        Update: {
+          caregiver_id?: string;
+          viewed_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

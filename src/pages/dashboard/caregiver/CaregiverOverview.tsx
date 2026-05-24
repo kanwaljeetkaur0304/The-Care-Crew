@@ -1,9 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, Mail, Star, TrendingUp, ArrowRight, Sparkles, Camera, Award } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useContactRequests } from '../../../context/ContactRequestContext';
+import { supabase, isSupabaseConfigured } from '../../../lib/supabase';
 import DashboardStatCard from '../../../components/dashboard/DashboardStatCard';
 import {
   MOCK_CAREGIVER_LISTING,
@@ -19,6 +20,37 @@ export default function CaregiverOverview() {
   const { user } = useAuth();
   const { caregiverInbox } = useContactRequests();
   const navigate = useNavigate();
+
+  // ── Live profile view count from Supabase ───────────────────────────────────
+  const [profileViews, setProfileViews] = useState<number | null>(null);
+  const [viewsTrend, setViewsTrend] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!user || !isSupabaseConfigured) return;
+
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    // Total views for this caregiver
+    supabase
+      .from('profile_views')
+      .select('*', { count: 'exact', head: true })
+      .eq('caregiver_id', user.id)
+      .then(({ count }) => {
+        if (count !== null) setProfileViews(count);
+      });
+
+    // Views this month (for trend badge)
+    supabase
+      .from('profile_views')
+      .select('*', { count: 'exact', head: true })
+      .eq('caregiver_id', user.id)
+      .gte('viewed_at', startOfMonth.toISOString())
+      .then(({ count }) => {
+        if (count !== null) setViewsTrend(count);
+      });
+  }, [user]);
 
   // ── Contact Requests: real inbox (from families who sent requests) + mock data ──
   const allRequests = useMemo(
@@ -79,8 +111,15 @@ export default function CaregiverOverview() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Profile Views — mock until backend view-tracking is wired up */}
-        <DashboardStatCard label="Profile Views" value={MOCK_CAREGIVER_LISTING.views} icon={Eye} trend="this month" trendUp color="maroon" />
+        {/* Profile Views — live from Supabase, falls back to mock for demo accounts */}
+        <DashboardStatCard
+          label="Profile Views"
+          value={profileViews ?? MOCK_CAREGIVER_LISTING.views}
+          icon={Eye}
+          trend={viewsTrend !== null ? `${viewsTrend} this month` : 'this month'}
+          trendUp
+          color="maroon"
+        />
         {/* Contact Requests — real inbox (caregiverInbox) + seeded mock data */}
         <DashboardStatCard label="Contact Requests" value={totalContactRequests} icon={Mail} trend={pendingRequests > 0 ? `${pendingRequests} pending` : 'all reviewed'} trendUp={pendingRequests > 0} color="blue" />
         {/* Avg Rating — calculated from reviews array */}
