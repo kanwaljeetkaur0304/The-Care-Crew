@@ -14,16 +14,18 @@ const DAY_SHORT: Record<string, string> = {
   Monday: 'Mon', Tuesday: 'Tue', Wednesday: 'Wed', Thursday: 'Thu',
   Friday: 'Fri', Saturday: 'Sat', Sunday: 'Sun',
 };
-const TIME_SLOTS = ['Morning', 'Afternoon', 'Evening'];
+const TIME_SLOTS = ['Morning', 'Afternoon', 'Evening', 'Overnight'];
 const SLOT_COLORS: Record<string, string> = {
   Morning:   'bg-amber-100 text-amber-700 border-amber-200',
   Afternoon: 'bg-sky-100 text-sky-700 border-sky-200',
   Evening:   'bg-violet-100 text-violet-700 border-violet-200',
+  Overnight: 'bg-slate-200 text-slate-700 border-slate-300',
 };
 const SLOT_COLORS_DARK: Record<string, string> = {
   Morning:   'bg-amber-900/30 text-amber-300 border-amber-700/40',
   Afternoon: 'bg-sky-900/30 text-sky-300 border-sky-700/40',
   Evening:   'bg-violet-900/30 text-violet-300 border-violet-700/40',
+  Overnight: 'bg-slate-700/40 text-slate-300 border-slate-600/40',
 };
 
 export default function CaregiverListing() {
@@ -256,7 +258,7 @@ export default function CaregiverListing() {
           /* Edit mode: full 7-day × 3-slot grid */
           <div className="space-y-2">
             {/* Column headers */}
-            <div className="grid grid-cols-[80px_1fr_1fr_1fr] gap-1.5 items-center">
+            <div className="grid grid-cols-[72px_1fr_1fr_1fr_1fr] gap-1.5 items-center">
               <div />
               {TIME_SLOTS.map((slot) => (
                 <div key={slot} className={`text-center text-xs font-semibold uppercase tracking-wide py-1 rounded-lg ${isDark ? 'text-ink-muted bg-void' : 'text-light-text-muted bg-light-bg'}`}>
@@ -268,7 +270,7 @@ export default function CaregiverListing() {
             {DAYS.map((day) => {
               const slots = listing.weeklySchedule[day] ?? [];
               return (
-                <div key={day} className="grid grid-cols-[80px_1fr_1fr_1fr] gap-1.5 items-center">
+                <div key={day} className="grid grid-cols-[72px_1fr_1fr_1fr_1fr] gap-1.5 items-center">
                   <div className={`text-xs font-semibold ${slots.length > 0 ? (isDark ? 'text-ink' : 'text-light-text') : (isDark ? 'text-ink-muted' : 'text-light-text-muted')}`}>
                     {DAY_SHORT[day]}
                   </div>
