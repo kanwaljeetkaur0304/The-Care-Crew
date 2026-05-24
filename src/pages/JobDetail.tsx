@@ -135,34 +135,38 @@ export default function JobDetail() {
           </div>
         </div>
 
-        {/* Apply / Send Request — visible to caregiver users */}
-        {(!user || user.role === 'caregiver') && (
-          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-void border-void-border' : 'bg-white border-light-border'}`}>
-            <div className="flex items-center gap-2 mb-3">
-              <Send className={`w-5 h-5 ${isDark ? 'text-gold' : 'text-maroon'}`} />
-              <h2 className={`font-display text-lg font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>
-                Apply for this Job
-              </h2>
-            </div>
-            <p className={`text-sm mb-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
-              Send a message to express your interest. Your request will appear in the family's dashboard.
-            </p>
-            {user && hasSentTo(user.id, job.id) ? (
-              <div className={`flex items-center gap-2 py-3 px-4 rounded-xl text-sm font-medium ${isDark ? 'bg-emerald-900/20 border border-emerald-700/30 text-emerald-400' : 'bg-emerald-50 border border-emerald-200 text-emerald-700'}`}>
-                <CheckCircle className="w-4 h-4 shrink-0" />
-                Application already sent for this job
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowRequestModal(true)}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-maroon to-gold text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity btn-press shadow-md shadow-maroon/20"
-              >
-                <Send className="w-4 h-4" />
-                Apply / Send Request
-              </button>
-            )}
+        {/* Apply — visible to everyone, gated behind subscription */}
+        <div className={`rounded-2xl border p-6 mb-6 ${isDark ? 'bg-void border-void-border' : 'bg-white border-light-border'}`}>
+          <div className="flex items-center gap-2 mb-3">
+            <Send className={`w-5 h-5 ${isDark ? 'text-gold' : 'text-maroon'}`} />
+            <h2 className={`font-display text-lg font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>
+              Apply for this Job
+            </h2>
           </div>
-        )}
+          <p className={`text-sm mb-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
+            Send your introduction directly to the family. Your request will appear in their dashboard inbox.
+          </p>
+          {user && hasSentTo(user.id, job.id) ? (
+            <div className={`flex items-center gap-2 py-3 px-4 rounded-xl text-sm font-medium ${isDark ? 'bg-emerald-900/20 border border-emerald-700/30 text-emerald-400' : 'bg-emerald-50 border border-emerald-200 text-emerald-700'}`}>
+              <CheckCircle className="w-4 h-4 shrink-0" />
+              Application already sent for this job
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                if (!hasActiveSubscription) {
+                  setShowModal(true);
+                } else {
+                  setShowRequestModal(true);
+                }
+              }}
+              className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-maroon to-gold text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity btn-press shadow-md shadow-maroon/20"
+            >
+              <Send className="w-4 h-4" />
+              Apply for this Job
+            </button>
+          )}
+        </div>
 
         {/* Contact Section */}
         <div className={`rounded-2xl border p-6 ${isDark ? 'bg-void border-void-border' : 'bg-white border-light-border'}`}>
@@ -242,7 +246,11 @@ export default function JobDetail() {
         </div>
       </main>
 
-      <SubscriptionModal isOpen={showModal} onClose={() => setShowModal(false)} />
+      <SubscriptionModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        contextMessage="To apply for this job, please subscribe to a plan to continue. You can then send your application directly to the family."
+      />
       <SendRequestModal
         isOpen={showRequestModal}
         onClose={() => setShowRequestModal(false)}

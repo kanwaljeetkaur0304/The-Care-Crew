@@ -12,9 +12,11 @@ import StripePaymentForm from './StripePaymentForm';
 interface SubscriptionModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Optional override for the subtitle shown above the plans */
+  contextMessage?: string;
 }
 
-export default function SubscriptionModal({ isOpen, onClose }: SubscriptionModalProps) {
+export default function SubscriptionModal({ isOpen, onClose, contextMessage }: SubscriptionModalProps) {
   const { isDark } = useTheme();
   const { purchaseSubscription } = useSubscription();
   const { user } = useAuth();
@@ -144,7 +146,7 @@ export default function SubscriptionModal({ isOpen, onClose }: SubscriptionModal
           {step === 'plans' && (
             <div className="space-y-4">
               <p className={`text-sm mb-6 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
-                Choose a plan to unlock phone numbers and email addresses for all job listings.
+                {contextMessage ?? 'Choose a plan to unlock phone numbers and email addresses for all job listings.'}
               </p>
 
               {error && (
