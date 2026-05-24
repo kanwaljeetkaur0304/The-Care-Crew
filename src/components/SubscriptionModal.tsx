@@ -280,7 +280,7 @@ export default function SubscriptionModal({ isOpen, onClose }: SubscriptionModal
                   }`}
                 >
                   <UserPlus className="w-4 h-4" />
-                  Create a Free Account
+                  Register / Sign Up
                 </button>
               </div>
 
