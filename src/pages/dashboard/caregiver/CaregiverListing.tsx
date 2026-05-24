@@ -28,11 +28,24 @@ const SLOT_COLORS_DARK: Record<string, string> = {
   Overnight: 'bg-slate-700/40 text-slate-300 border-slate-600/40',
 };
 
+const LISTING_STATUS_KEY = 'carecrew_listing_status';
+
+function loadListingStatus(): 'active' | 'paused' {
+  try {
+    const stored = localStorage.getItem(LISTING_STATUS_KEY);
+    if (stored === 'paused' || stored === 'active') return stored;
+  } catch { /* ignore */ }
+  return MOCK_CAREGIVER_LISTING.status;
+}
+
 export default function CaregiverListing() {
   const { isDark } = useTheme();
   const { hasActiveListingSubscription, listingExpiryDate } = useSubscription();
   const [editing, setEditing] = useState(false);
-  const [listing, setListing] = useState(MOCK_CAREGIVER_LISTING);
+  const [listing, setListing] = useState({
+    ...MOCK_CAREGIVER_LISTING,
+    status: loadListingStatus(),          // ← persisted status
+  });
   const [showModal, setShowModal] = useState(false);
 
   const toggleSkill = (skill: string) => {
@@ -54,7 +67,11 @@ export default function CaregiverListing() {
   };
 
   const toggleStatus = () => {
-    setListing((p) => ({ ...p, status: p.status === 'active' ? 'paused' : 'active' }));
+    setListing((p) => {
+      const next = p.status === 'active' ? 'paused' : 'active';
+      try { localStorage.setItem(LISTING_STATUS_KEY, next); } catch { /* ignore */ }
+      return { ...p, status: next };
+    });
   };
 
   if (!hasActiveListingSubscription) {
