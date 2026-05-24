@@ -3,6 +3,7 @@ import { X, Mail, Lock, Eye, EyeOff, Loader2, CheckCircle2, User, Phone, Sparkle
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useSubscription } from '../context/SubscriptionContext';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
   const { isDark } = useTheme();
 
   const { login, register, loginAsDemo, isLoading } = useAuth();
+  const { purchaseSubscription, purchaseListingSubscription } = useSubscription();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -159,6 +161,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
                     type="button"
                     onClick={() => {
                       loginAsDemo('family');
+                      purchaseSubscription('2m');
+                      purchaseListingSubscription('list-2m');
                       onClose();
                       navigate('/dashboard');
                     }}
@@ -174,6 +178,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
                     type="button"
                     onClick={() => {
                       loginAsDemo('caregiver');
+                      purchaseSubscription('2m');
+                      purchaseListingSubscription('list-2m');
                       onClose();
                       navigate('/dashboard');
                     }}
