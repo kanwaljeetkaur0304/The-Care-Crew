@@ -6,8 +6,8 @@ import { useTheme } from '../context/ThemeContext';
 import { CONTACT_PLANS } from '../context/SubscriptionContext';
 
 const AD_PLANS = [
-  { id: '1m', label: '1 Month', price: 29, duration: '30 days', popular: false },
-  { id: '2m', label: '2 Months', price: 49, duration: '60 days', popular: true },
+  { id: '1m', label: '1 Month', price: 19, duration: '30 days', popular: false },
+  { id: '2m', label: '2 Months', price: 39, duration: '60 days', popular: true },
   { id: '3m', label: '3 Months', price: 69, duration: '90 days', popular: false },
 ];
 

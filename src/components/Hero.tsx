@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Search, Users, ShieldCheck, MapPin } from 'lucide-react';
+import { ArrowRight, Search, Users, ShieldCheck, MapPin, Zap } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 interface HeroProps {
@@ -60,8 +60,8 @@ export default function Hero({ onPostAd, onBrowse }: HeroProps) {
             <form onSubmit={handleSearch} className={`flex flex-row items-stretch gap-2 p-2 rounded-2xl border shadow-lg mb-6 animate-fade-up animate-delay-3 ${
               isDark ? 'bg-void-light border-void-border' : 'bg-white border-light-border'
             }`}>
-              <div className="flex flex-col flex-1 min-w-0">
-                <div className="flex items-center gap-2 px-3 py-1.5">
+              <div className="flex flex-col sm:flex-row flex-1 min-w-0">
+                <div className="flex items-center gap-2 px-3 py-1.5 flex-1 min-w-0">
                   <Search className={`w-4 h-4 shrink-0 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
                   <input
                     type="text"
@@ -71,8 +71,9 @@ export default function Hero({ onPostAd, onBrowse }: HeroProps) {
                     className={`w-full bg-transparent text-sm outline-none ${isDark ? 'text-ink placeholder:text-ink-muted' : 'text-light-text placeholder:text-light-text-muted'}`}
                   />
                 </div>
-                <div className={`mx-3 h-px ${isDark ? 'bg-void-border' : 'bg-light-border'}`} />
-                <div className="flex items-center gap-2 px-3 py-1.5">
+                <div className={`sm:hidden mx-3 h-px ${isDark ? 'bg-void-border' : 'bg-light-border'}`} />
+                <div className={`hidden sm:block w-px self-stretch my-1 ${isDark ? 'bg-void-border' : 'bg-light-border'}`} />
+                <div className="flex items-center gap-2 px-3 py-1.5 flex-1 min-w-0">
                   <MapPin className={`w-4 h-4 shrink-0 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
                   <input
                     type="text"
@@ -109,13 +110,28 @@ export default function Hero({ onPostAd, onBrowse }: HeroProps) {
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Urgent hire teaser */}
+            <div className="mt-5 animate-fade-up animate-delay-4">
+              <a
+                href="#urgent-hire"
+                onClick={e => { e.preventDefault(); document.getElementById('urgent-hire')?.scrollIntoView({ behavior: 'smooth' }); }}
+                className="inline-flex items-center gap-2 group"
+              >
+                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 border border-red-200 text-red-600 text-xs font-semibold animate-pulse">
+                  <Zap className="w-3 h-3 fill-red-500" />
+                  Freelance caregivers available now
+                </span>
+                <ArrowRight className={`w-3.5 h-3.5 group-hover:translate-x-1 transition-transform ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+              </a>
+            </div>
           </div>
 
-          <div className="relative flex items-center justify-center animate-fade-up animate-delay-2">
+          <div className="relative flex items-center justify-center animate-fade-up animate-delay-2 lg:translate-x-10 lg:-translate-y-8">
             <div className="absolute w-[340px] h-[340px] md:w-[420px] md:h-[420px] rounded-full bg-gradient-to-br from-marigold/20 via-maroon/10 to-lotus/10 blur-2xl" />
-            <div className="absolute w-[300px] h-[300px] md:w-[380px] md:h-[380px] rounded-full border-2 border-dashed border-marigold/25 animate-[spin_20s_linear_infinite]" />
-            <div className="absolute w-[320px] h-[320px] md:w-[400px] md:h-[400px] rounded-full border border-lotus/15 animate-[spin_30s_linear_infinite_reverse]" />
-            <div className="absolute w-[360px] h-[360px] md:w-[440px] md:h-[440px] rounded-full border border-dashed border-saffron/10 animate-[spin_45s_linear_infinite]" />
+            <div className="absolute w-[300px] h-[300px] md:w-[380px] md:h-[380px] rounded-full border-2 border-dashed border-marigold/60 animate-[spin_20s_linear_infinite]" />
+            <div className="absolute w-[320px] h-[320px] md:w-[400px] md:h-[400px] rounded-full border-2 border-lotus/50 animate-[spin_30s_linear_infinite_reverse]" />
+            <div className="absolute w-[360px] h-[360px] md:w-[440px] md:h-[440px] rounded-full border-2 border-dashed border-saffron/45 animate-[spin_45s_linear_infinite]" />
 
             <div className="relative w-[280px] h-[280px] md:w-[360px] md:h-[360px] rounded-full overflow-hidden shadow-2xl shadow-gold/10">
               <img

@@ -5,6 +5,7 @@ import Categories from './components/Categories';
 import JobListings from './components/JobListings';
 import JobSeekers from './components/JobSeekers';
 import HowItWorks from './components/HowItWorks';
+import UrgentHire from './components/UrgentHire';
 import PostAdModal from './components/PostAdModal';
 import AuthModal from './components/AuthModal';
 import Footer from './components/Footer';
@@ -27,6 +28,7 @@ function App() {
       <Navbar onPostAd={handlePostAd} onAuth={() => setAuthOpen(true)} />
       <Hero onPostAd={handlePostAd} onBrowse={() => scrollTo('#listings')} />
       <Categories />
+      <UrgentHire />
       <JobListings />
       <JobSeekers />
       <HowItWorks />

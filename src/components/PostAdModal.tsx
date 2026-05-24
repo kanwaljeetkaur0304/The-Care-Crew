@@ -31,15 +31,15 @@ const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const EXPERIENCE_YEARS = ['Less than 1 year', '1 year', '2 years', '3 years', '4 years', '5 years', '6 years', '7 years', '8 years', '9 years', '10+ years'];
 
 const HIRING_PLANS = [
-  { id: '1m', label: '1 Month', price: 29, duration: '30 days', popular: false },
-  { id: '2m', label: '2 Months', price: 49, duration: '60 days', popular: true },
+  { id: '1m', label: '1 Month', price: 19, duration: '30 days', popular: false },
+  { id: '2m', label: '2 Months', price: 39, duration: '60 days', popular: true },
   { id: '3m', label: '3 Months', price: 69, duration: '90 days', popular: false },
 ];
 
 const SEEKER_PLANS = [
   { id: '1m', label: '1 Month', price: 19, duration: '30 days', popular: false },
-  { id: '2m', label: '2 Months', price: 35, duration: '60 days', popular: true },
-  { id: '3m', label: '3 Months', price: 49, duration: '90 days', popular: false },
+  { id: '2m', label: '2 Months', price: 39, duration: '60 days', popular: true },
+  { id: '3m', label: '3 Months', price: 69, duration: '90 days', popular: false },
 ];
 
 interface Reference {
@@ -371,7 +371,7 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
 
   return (
     <div className={`fixed inset-0 z-[100] overflow-y-auto ${isDark ? 'bg-void-light' : 'bg-white'}`}>
-      <div className="min-h-full max-w-2xl mx-auto flex flex-col">
+      <div className="min-h-full max-w-4xl mx-auto flex flex-col">
 
         {/* Sticky header + stepper */}
         <div className={`sticky top-0 z-10 border-b ${
@@ -609,26 +609,30 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
               {/* Step 5: Plans */}
               {step === 5 && (
                 <div className="space-y-4">
-                  <p className={`text-sm mb-2 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Choose how long you want your ad to stay active.</p>
+                  <p className={`text-sm mb-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Choose how long you want your ad to stay active.</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {HIRING_PLANS.map((plan) => (
                     <button key={plan.id} type="button" onClick={() => setHSelectedPlan(plan.id)}
-                      className={`w-full flex items-center justify-between p-5 rounded-2xl border transition-all text-left ${hSelectedPlan === plan.id ? 'bg-gold/10 border-gold shadow-lg shadow-gold/10' : (isDark ? 'bg-void border-void-border hover:border-gold/30' : 'bg-light-bg border-light-border hover:border-gold/20')}`}
+                      className={`relative flex flex-col p-6 rounded-2xl border transition-all text-left ${hSelectedPlan === plan.id ? 'bg-gold/10 border-gold shadow-lg shadow-gold/10 ring-2 ring-gold/20' : (isDark ? 'bg-void border-void-border hover:border-gold/30' : 'bg-light-bg border-light-border hover:border-gold/20')}`}
                     >
-                      <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${hSelectedPlan === plan.id ? 'bg-gradient-to-br from-maroon to-gold' : (isDark ? 'bg-void-lighter' : 'bg-light-surface-2')}`}>
-                          <Calendar className={`w-6 h-6 ${hSelectedPlan === plan.id ? 'text-white' : 'text-gold'}`} />
+                      {plan.popular && (
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                          <div className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-maroon to-gold text-white text-xs font-semibold rounded-full">
+                            <Star className="w-3 h-3 fill-white" /> Popular
+                          </div>
                         </div>
-                        <div>
-                          <div className={`font-display text-lg font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>{plan.label}</div>
-                          <div className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>{plan.duration} visibility</div>
-                        </div>
+                      )}
+                      <div className="mb-3">
+                        <div className={`font-display text-lg font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>{plan.label}</div>
+                        <div className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>{plan.duration} visibility</div>
                       </div>
-                      <div className="text-right">
-                        <div className={`font-display text-2xl font-bold ${hSelectedPlan === plan.id ? 'text-gold' : (isDark ? 'text-ink' : 'text-light-text')}`}>${plan.price}</div>
-                        {plan.popular && <div className="flex items-center gap-1 text-xs text-gold mt-1"><Star className="w-3 h-3 fill-gold" /> Popular</div>}
+                      <div className="font-display text-3xl font-bold text-gold mb-4">${plan.price}</div>
+                      <div className={`mt-auto py-2.5 px-4 rounded-lg text-center text-sm font-medium ${hSelectedPlan === plan.id ? 'bg-gradient-to-r from-maroon to-gold text-white' : (isDark ? 'bg-void-lighter text-ink-light' : 'bg-light-surface-2 text-light-text-2')}`}>
+                        {hSelectedPlan === plan.id ? 'Selected' : 'Select Plan'}
                       </div>
                     </button>
                   ))}
+                  </div>
                   {renderNavButtons()}
                 </div>
               )}
@@ -942,26 +946,30 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
               {/* Step 7: Plans */}
               {step === 7 && (
                 <div className="space-y-4">
-                  <p className={`text-sm mb-2 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Choose how long you want your profile to stay active.</p>
+                  <p className={`text-sm mb-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Choose how long you want your profile to stay active.</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {SEEKER_PLANS.map((plan) => (
                     <button key={plan.id} type="button" onClick={() => setSSelectedPlan(plan.id)}
-                      className={`w-full flex items-center justify-between p-5 rounded-2xl border transition-all text-left ${sSelectedPlan === plan.id ? 'bg-gold/10 border-gold shadow-lg shadow-gold/10' : (isDark ? 'bg-void border-void-border hover:border-gold/30' : 'bg-light-bg border-light-border hover:border-gold/20')}`}
+                      className={`relative flex flex-col p-6 rounded-2xl border transition-all text-left ${sSelectedPlan === plan.id ? 'bg-gold/10 border-gold shadow-lg shadow-gold/10 ring-2 ring-gold/20' : (isDark ? 'bg-void border-void-border hover:border-gold/30' : 'bg-light-bg border-light-border hover:border-gold/20')}`}
                     >
-                      <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${sSelectedPlan === plan.id ? 'bg-gradient-to-br from-maroon to-gold' : (isDark ? 'bg-void-lighter' : 'bg-light-surface-2')}`}>
-                          <Calendar className={`w-6 h-6 ${sSelectedPlan === plan.id ? 'text-white' : 'text-gold'}`} />
+                      {plan.popular && (
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                          <div className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-maroon to-gold text-white text-xs font-semibold rounded-full">
+                            <Star className="w-3 h-3 fill-white" /> Popular
+                          </div>
                         </div>
-                        <div>
-                          <div className={`font-display text-lg font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>{plan.label}</div>
-                          <div className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>{plan.duration} visibility</div>
-                        </div>
+                      )}
+                      <div className="mb-3">
+                        <div className={`font-display text-lg font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>{plan.label}</div>
+                        <div className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>{plan.duration} visibility</div>
                       </div>
-                      <div className="text-right">
-                        <div className={`font-display text-2xl font-bold ${sSelectedPlan === plan.id ? 'text-gold' : (isDark ? 'text-ink' : 'text-light-text')}`}>${plan.price}</div>
-                        {plan.popular && <div className="flex items-center gap-1 text-xs text-gold mt-1"><Star className="w-3 h-3 fill-gold" /> Popular</div>}
+                      <div className="font-display text-3xl font-bold text-gold mb-4">${plan.price}</div>
+                      <div className={`mt-auto py-2.5 px-4 rounded-lg text-center text-sm font-medium ${sSelectedPlan === plan.id ? 'bg-gradient-to-r from-maroon to-gold text-white' : (isDark ? 'bg-void-lighter text-ink-light' : 'bg-light-surface-2 text-light-text-2')}`}>
+                        {sSelectedPlan === plan.id ? 'Selected' : 'Select Plan'}
                       </div>
                     </button>
                   ))}
+                  </div>
                   {renderNavButtons()}
                 </div>
               )}

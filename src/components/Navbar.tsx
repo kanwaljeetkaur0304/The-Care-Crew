@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X, HeartHandshake, LogOut, ChevronDown, Globe, MapPin, Search, Sun, Moon } from 'lucide-react';
+import { Menu, X, HeartHandshake, LogOut, ChevronDown, MapPin, Search, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
 import { useTheme } from '../context/ThemeContext';
@@ -261,17 +261,6 @@ export default function Navbar({ onPostAd, onAuth }: NavbarProps) {
             {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
 
-          <div className={`flex items-center gap-1 px-3 py-1.5 rounded-full border text-xs cursor-pointer transition-colors ${
-            isDark
-              ? 'border-void-border text-ink-muted hover:border-gold/40 hover:text-gold'
-              : 'border-light-border text-light-text-muted hover:border-maroon/30 hover:text-maroon'
-          }`}>
-            <Globe className="w-3.5 h-3.5" />
-            <span>EN</span>
-            <span className={isDark ? 'text-void-border' : 'text-light-border'}>|</span>
-            <span className="opacity-60">हिंदी</span>
-          </div>
-
           {user ? (
             <>
               <button
@@ -449,11 +438,6 @@ export default function Navbar({ onPostAd, onAuth }: NavbarProps) {
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               {isDark ? 'Light Mode' : 'Dark Mode'}
             </button>
-          </div>
-
-          <div className={`flex items-center gap-2 py-2 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
-            <Globe className="w-4 h-4" />
-            <span className="text-sm">English / हिंदी</span>
           </div>
 
           {user ? (

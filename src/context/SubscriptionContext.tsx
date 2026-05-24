@@ -4,7 +4,7 @@ export const CONTACT_PLANS = [
   {
     id: '1m',
     label: '1 Month',
-    price: 29,
+    price: 19,
     durationDays: 30,
     popular: false,
     tier: 'Basic',
@@ -22,7 +22,7 @@ export const CONTACT_PLANS = [
   {
     id: '2m',
     label: '2 Months',
-    price: 49,
+    price: 39,
     durationDays: 60,
     popular: true,
     tier: 'Standard',

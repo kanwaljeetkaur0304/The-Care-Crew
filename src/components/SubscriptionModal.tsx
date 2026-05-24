@@ -110,7 +110,7 @@ export default function SubscriptionModal({ isOpen, onClose }: SubscriptionModal
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
-      <div className={`relative z-10 w-full max-w-2xl rounded-3xl border shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto ${
+      <div className={`relative z-10 w-full max-w-4xl rounded-3xl border shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto ${
         isDark ? 'bg-void border-void-border' : 'bg-white border-light-border'
       }`}>
         {/* Header */}
