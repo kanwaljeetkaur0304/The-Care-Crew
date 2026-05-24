@@ -1,15 +1,19 @@
 import { useState } from 'react';
-import { Plus, Eye, Users, Pause, Play, Trash2, Briefcase, MapPin, Calendar } from 'lucide-react';
+import { Plus, Eye, Users, Pause, Play, Trash2, Briefcase, MapPin, Calendar, Lock } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
+import { useSubscription } from '../../../context/SubscriptionContext';
 import { MOCK_JOB_POSTS, type JobPost } from '../../../data/dashboardMockData';
 import DashboardEmptyState from '../../../components/dashboard/DashboardEmptyState';
 import DashboardBadge from '../../../components/dashboard/DashboardBadge';
+import ListingSubscriptionModal from '../../../components/ListingSubscriptionModal';
 
 export default function FamilyJobPosts() {
   const { isDark } = useTheme();
+  const { hasActiveListingSubscription, listingExpiryDate } = useSubscription();
   const [jobs, setJobs] = useState<JobPost[]>(MOCK_JOB_POSTS);
   const [filter, setFilter] = useState<'all' | 'active' | 'paused' | 'expired'>('all');
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [showListingModal, setShowListingModal] = useState(false);
 
   const filtered = filter === 'all' ? jobs : jobs.filter((j) => j.status === filter);
 
@@ -37,11 +41,46 @@ export default function FamilyJobPosts() {
             {jobs.filter((j) => j.status === 'active').length} active · {jobs.length} total
           </p>
         </div>
-        <button className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-maroon to-gold text-white text-sm font-semibold rounded-full hover:opacity-90 transition-opacity btn-press shadow-md shadow-maroon/20 shrink-0">
-          <Plus className="w-4 h-4" />
+        <button
+          onClick={() => {
+            if (!hasActiveListingSubscription) {
+              setShowListingModal(true);
+            }
+            // If subscribed: open post form (PostAdModal / inline form — wired here)
+          }}
+          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-maroon to-gold text-white text-sm font-semibold rounded-full hover:opacity-90 transition-opacity btn-press shadow-md shadow-maroon/20 shrink-0"
+        >
+          {hasActiveListingSubscription ? (
+            <Plus className="w-4 h-4" />
+          ) : (
+            <Lock className="w-4 h-4" />
+          )}
           Post New Job
         </button>
       </div>
+
+      {/* Listing subscription status banner */}
+      {hasActiveListingSubscription ? (
+        <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm ${isDark ? 'bg-emerald-900/20 border-emerald-700/30 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
+          <Plus className="w-4 h-4 shrink-0" />
+          <span>Listing subscription active · expires <strong>{listingExpiryDate}</strong>. You can post and edit job listings freely.</span>
+        </div>
+      ) : (
+        <div className={`flex items-center justify-between gap-4 px-4 py-3 rounded-xl border ${isDark ? 'bg-amber-900/10 border-amber-700/20' : 'bg-amber-50 border-amber-200'}`}>
+          <div className="flex items-center gap-3">
+            <Lock className={`w-4 h-4 shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+            <span className={`text-sm ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
+              A <strong>Freelance Listing subscription</strong> is required to post new jobs. Your existing posts remain active.
+            </span>
+          </div>
+          <button
+            onClick={() => setShowListingModal(true)}
+            className="shrink-0 px-4 py-1.5 bg-gradient-to-r from-maroon to-gold text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity btn-press"
+          >
+            Subscribe
+          </button>
+        </div>
+      )}
 
       {/* Filter Tabs */}
       <div className="flex gap-2 flex-wrap">
@@ -182,6 +221,8 @@ export default function FamilyJobPosts() {
           ))}
         </div>
       )}
+
+      <ListingSubscriptionModal isOpen={showListingModal} onClose={() => setShowListingModal(false)} />
     </div>
   );
 }

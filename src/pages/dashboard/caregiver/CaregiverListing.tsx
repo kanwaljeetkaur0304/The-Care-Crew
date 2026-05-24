@@ -1,16 +1,20 @@
 import { useState } from 'react';
-import { Eye, Mail, Edit2, Save, X, Pause, Play } from 'lucide-react';
+import { Eye, Mail, Edit2, Save, X, Pause, Play, FileText, Lock } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
+import { useSubscription } from '../../../context/SubscriptionContext';
 import { MOCK_CAREGIVER_LISTING } from '../../../data/dashboardMockData';
 import DashboardStatCard from '../../../components/dashboard/DashboardStatCard';
 import DashboardBadge from '../../../components/dashboard/DashboardBadge';
+import ListingSubscriptionModal from '../../../components/ListingSubscriptionModal';
 
 const SKILL_OPTIONS = ['Indian Cooking', 'Homework Help', 'Medication Reminders', 'Elder Companionship', 'Creative Play', 'First Aid', 'Driving', 'House Cleaning', 'Laundry', 'Grocery Shopping'];
 
 export default function CaregiverListing() {
   const { isDark } = useTheme();
+  const { hasActiveListingSubscription, listingExpiryDate } = useSubscription();
   const [editing, setEditing] = useState(false);
   const [listing, setListing] = useState(MOCK_CAREGIVER_LISTING);
+  const [showModal, setShowModal] = useState(false);
 
   const toggleSkill = (skill: string) => {
     setListing((p) => ({
@@ -23,8 +27,73 @@ export default function CaregiverListing() {
     setListing((p) => ({ ...p, status: p.status === 'active' ? 'paused' : 'active' }));
   };
 
+  if (!hasActiveListingSubscription) {
+    return (
+      <>
+        <div className="space-y-6 max-w-2xl">
+          {/* Header */}
+          <div>
+            <h2 className={`font-display text-2xl font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>
+              My Listing
+            </h2>
+            <p className={`text-sm mt-1 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
+              How families find you on The Care Crew
+            </p>
+          </div>
+
+          {/* Paywall Card */}
+          <div className={`rounded-2xl border p-10 text-center ${isDark ? 'bg-void-light border-void-border' : 'bg-white border-light-border'}`}>
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5 ${isDark ? 'bg-void-lighter' : 'bg-light-surface-2'}`}>
+              <Lock className={`w-7 h-7 ${isDark ? 'text-gold' : 'text-maroon'}`} />
+            </div>
+            <h3 className={`font-display text-xl font-semibold mb-2 ${isDark ? 'text-ink' : 'text-light-text'}`}>
+              No Active Listing Subscription
+            </h3>
+            <p className={`text-sm max-w-sm mx-auto mb-2 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
+              Subscribe to post your freelance caregiver listing. Families in your area will be able to find and contact you directly.
+            </p>
+            <p className={`text-xs mb-6 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
+              You can edit your listing freely once active — no extra charges.
+            </p>
+
+            {/* What you get */}
+            <div className={`rounded-xl border p-4 mb-6 text-left max-w-xs mx-auto ${isDark ? 'bg-void border-void-border' : 'bg-light-bg border-light-border'}`}>
+              {[
+                'Appear in caregiver search results',
+                'Receive contact requests from families',
+                'Show your skills, rate & availability',
+                'Featured badge on Standard & Premium',
+              ].map((item) => (
+                <div key={item} className={`flex items-start gap-2 py-1.5 text-sm ${isDark ? 'text-ink-light' : 'text-light-text-2'}`}>
+                  <FileText className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${isDark ? 'text-gold' : 'text-maroon'}`} />
+                  {item}
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setShowModal(true)}
+              className="px-8 py-3 bg-gradient-to-r from-maroon to-gold text-white text-sm font-semibold rounded-full hover:opacity-90 transition-opacity btn-press shadow-md shadow-maroon/20"
+            >
+              View Listing Plans
+            </button>
+          </div>
+        </div>
+        <ListingSubscriptionModal isOpen={showModal} onClose={() => setShowModal(false)} />
+      </>
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-2xl">
+      {/* Listing Active Banner */}
+      {listingExpiryDate && (
+        <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm ${isDark ? 'bg-emerald-900/20 border-emerald-700/30 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
+          <FileText className="w-4 h-4 shrink-0" />
+          <span>Listing active · expires <strong>{listingExpiryDate}</strong>. You can edit freely anytime.</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -168,3 +237,4 @@ export default function CaregiverListing() {
     </div>
   );
 }
+

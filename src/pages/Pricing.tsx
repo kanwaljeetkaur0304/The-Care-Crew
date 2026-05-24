@@ -1,15 +1,10 @@
 import { Link } from 'react-router-dom';
 import {
-  HeartHandshake, ArrowLeft, Check, Star, Calendar, Briefcase, Zap
+  HeartHandshake, ArrowLeft, Check, Star, Briefcase, Zap, FileText
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-import { CONTACT_PLANS } from '../context/SubscriptionContext';
+import { CONTACT_PLANS, LISTING_PLANS } from '../context/SubscriptionContext';
 
-const AD_PLANS = [
-  { id: '1m', label: '1 Month', price: 19, duration: '30 days', popular: false },
-  { id: '2m', label: '2 Months', price: 39, duration: '60 days', popular: true },
-  { id: '3m', label: '3 Months', price: 69, duration: '90 days', popular: false },
-];
 
 const CONTACT_FEATURES = [
   'View phone numbers \u0026 emails',
@@ -19,13 +14,6 @@ const CONTACT_FEATURES = [
   'Cancel anytime',
 ];
 
-const AD_FEATURES = [
-  'Job post stays active',
-  'Appear in search results',
-  'Receive applications',
-  'Edit post anytime',
-  'Renew or extend easily',
-];
 
 export default function Pricing() {
   const { isDark } = useTheme();
@@ -128,22 +116,22 @@ export default function Pricing() {
           </div>
         </div>
 
-        {/* Ad Posting Plans */}
+        {/* Freelance Listing Plans */}
         <div>
           <div className="text-center mb-10">
             <div className="flex items-center justify-center gap-2 mb-3">
-              <Calendar className={`w-5 h-5 ${isDark ? 'text-gold' : 'text-maroon'}`} />
+              <FileText className={`w-5 h-5 ${isDark ? 'text-gold' : 'text-maroon'}`} />
               <h2 className={`font-display text-2xl md:text-3xl font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>
-                For Families Posting Jobs
+                Freelance Listings
               </h2>
             </div>
             <p className={`text-sm max-w-md mx-auto ${isDark ? 'text-ink-light' : 'text-light-text-2'}`}>
-              Post your job listing and reach qualified caregivers actively looking for work.
+              One subscription for both — families post their freelance care needs, caregivers post their availability.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {AD_PLANS.map((plan) => (
+            {LISTING_PLANS.map((plan) => (
               <div
                 key={plan.id}
                 className={`rounded-2xl border p-6 transition-colors ${
@@ -160,28 +148,33 @@ export default function Pricing() {
                   </div>
                 )}
                 <div className={`font-display text-lg font-semibold mb-1 ${isDark ? 'text-ink' : 'text-light-text'}`}>
-                  {plan.label}
+                  {plan.tier}
                 </div>
                 <div className={`text-sm mb-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
-                  {plan.duration} visibility
+                  {plan.durationDays} days visibility
                 </div>
                 <div className={`font-display text-4xl font-bold mb-6 ${isDark ? 'text-ink' : 'text-light-text'}`}>
                   ${plan.price}
                 </div>
                 <ul className="space-y-3 mb-6">
-                  {AD_FEATURES.map((f) => (
-                    <li key={f} className="flex items-start gap-2.5">
-                      <Check className={`w-4 h-4 mt-0.5 shrink-0 ${isDark ? 'text-gold' : 'text-maroon'}`} />
-                      <span className={`text-sm ${isDark ? 'text-ink-light' : 'text-light-text-2'}`}>{f}</span>
+                  {plan.features.map((f) => (
+                    <li key={f.name} className={`flex items-start gap-2.5 ${!f.included ? 'opacity-40' : ''}`}>
+                      <Check className={`w-4 h-4 mt-0.5 shrink-0 ${f.included ? isDark ? 'text-gold' : 'text-maroon' : isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+                      <span className={`text-sm ${isDark ? 'text-ink-light' : 'text-light-text-2'}`}>{f.name}</span>
                     </li>
                   ))}
                 </ul>
                 <button className="w-full py-3 bg-gradient-to-r from-maroon to-gold text-white text-sm font-medium rounded-xl transition-all btn-press">
-                  Post a Job
+                  Get Started
                 </button>
               </div>
             ))}
           </div>
+
+          {/* Note */}
+          <p className={`text-center text-xs mt-6 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
+            One listing slot per subscription · Edit your listing freely at any time · No auto-renewal
+          </p>
         </div>
 
         {/* FAQ */}
