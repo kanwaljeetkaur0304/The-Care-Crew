@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import {
   X, Building2, User, MapPin, DollarSign, FileText,
   CheckCircle2, ChevronRight, ChevronLeft,
-  Calendar, ShieldCheck, Star, Briefcase, Plus, Trash2,
+  ShieldCheck, Star, Briefcase, Plus, Trash2,
   Clock
 } from 'lucide-react';
 import { Elements } from '@stripe/react-stripe-js';
