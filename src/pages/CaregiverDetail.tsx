@@ -2,18 +2,24 @@ import { useState, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   MapPin, Star, DollarSign, Clock, Award, ArrowLeft,
-  HeartHandshake, Mail, Phone, Lock, ShieldCheck
+  HeartHandshake, Mail, Phone, Lock, ShieldCheck, Send, CheckCircle
 } from 'lucide-react';
 import { jobSeekers, categoryColors, categoryLabels } from '../data/mockData';
 import { useTheme } from '../context/ThemeContext';
 import { useSubscription } from '../context/SubscriptionContext';
+import { useAuth } from '../context/AuthContext';
+import { useContactRequests } from '../context/ContactRequestContext';
 import SubscriptionModal from '../components/SubscriptionModal';
+import SendRequestModal from '../components/SendRequestModal';
 
 export default function CaregiverDetail() {
   const { id } = useParams<{ id: string }>();
   const { isDark } = useTheme();
   const { hasActiveSubscription, expiryDate } = useSubscription();
+  const { user } = useAuth();
+  const { hasSentTo } = useContactRequests();
   const [showModal, setShowModal] = useState(false);
+  const [showRequestModal, setShowRequestModal] = useState(false);
 
   const seeker = useMemo(() => {
     return jobSeekers.find((s) => s.id === id);
@@ -132,6 +138,35 @@ export default function CaregiverDetail() {
           </div>
         </div>
 
+        {/* Send Contact Request — visible to family users */}
+        {(!user || user.role === 'family') && (
+          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-void border-void-border' : 'bg-white border-light-border'}`}>
+            <div className="flex items-center gap-2 mb-3">
+              <Send className={`w-5 h-5 ${isDark ? 'text-gold' : 'text-maroon'}`} />
+              <h2 className={`font-display text-lg font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>
+                Send Contact Request
+              </h2>
+            </div>
+            <p className={`text-sm mb-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
+              Send {seeker.name.split(' ')[0]} a message directly. Your request will appear in their dashboard inbox.
+            </p>
+            {user && hasSentTo(user.id, seeker.id) ? (
+              <div className={`flex items-center gap-2 py-3 px-4 rounded-xl text-sm font-medium ${isDark ? 'bg-emerald-900/20 border border-emerald-700/30 text-emerald-400' : 'bg-emerald-50 border border-emerald-200 text-emerald-700'}`}>
+                <CheckCircle className="w-4 h-4 shrink-0" />
+                Request already sent to {seeker.name.split(' ')[0]}
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowRequestModal(true)}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-maroon to-gold text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity btn-press shadow-md shadow-maroon/20"
+              >
+                <Send className="w-4 h-4" />
+                Send Contact Request
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Contact Section */}
         <div className={`rounded-2xl border p-6 ${isDark ? 'bg-void border-void-border' : 'bg-white border-light-border'}`}>
           <div className="flex items-center gap-2 mb-4">
@@ -211,6 +246,15 @@ export default function CaregiverDetail() {
       </main>
 
       <SubscriptionModal isOpen={showModal} onClose={() => setShowModal(false)} />
+      <SendRequestModal
+        isOpen={showRequestModal}
+        onClose={() => setShowRequestModal(false)}
+        targetId={seeker.id}
+        targetName={seeker.name}
+        targetRole="caregiver"
+        targetCategory={categoryLabels[seeker.category] ?? seeker.category}
+        targetLocation={seeker.location}
+      />
     </div>
   );
 }

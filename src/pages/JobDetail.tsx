@@ -2,18 +2,24 @@ import { useState, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   MapPin, Clock, DollarSign, Calendar, Briefcase, ArrowLeft,
-  HeartHandshake, Mail, Phone, Lock, CheckCircle, ShieldCheck
+  HeartHandshake, Mail, Phone, Lock, CheckCircle, ShieldCheck, Send
 } from 'lucide-react';
 import { jobListings, categoryColors, categoryLabels } from '../data/mockData';
 import { useTheme } from '../context/ThemeContext';
 import { useSubscription } from '../context/SubscriptionContext';
+import { useAuth } from '../context/AuthContext';
+import { useContactRequests } from '../context/ContactRequestContext';
 import SubscriptionModal from '../components/SubscriptionModal';
+import SendRequestModal from '../components/SendRequestModal';
 
 export default function JobDetail() {
   const { id } = useParams<{ id: string }>();
   const { isDark } = useTheme();
   const { hasActiveSubscription, expiryDate } = useSubscription();
+  const { user } = useAuth();
+  const { hasSentTo } = useContactRequests();
   const [showModal, setShowModal] = useState(false);
+  const [showRequestModal, setShowRequestModal] = useState(false);
 
   const job = useMemo(() => {
     return jobListings.find((j) => j.id === id);
@@ -129,6 +135,35 @@ export default function JobDetail() {
           </div>
         </div>
 
+        {/* Apply / Send Request — visible to caregiver users */}
+        {(!user || user.role === 'caregiver') && (
+          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-void border-void-border' : 'bg-white border-light-border'}`}>
+            <div className="flex items-center gap-2 mb-3">
+              <Send className={`w-5 h-5 ${isDark ? 'text-gold' : 'text-maroon'}`} />
+              <h2 className={`font-display text-lg font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>
+                Apply for this Job
+              </h2>
+            </div>
+            <p className={`text-sm mb-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
+              Send a message to express your interest. Your request will appear in the family's dashboard.
+            </p>
+            {user && hasSentTo(user.id, job.id) ? (
+              <div className={`flex items-center gap-2 py-3 px-4 rounded-xl text-sm font-medium ${isDark ? 'bg-emerald-900/20 border border-emerald-700/30 text-emerald-400' : 'bg-emerald-50 border border-emerald-200 text-emerald-700'}`}>
+                <CheckCircle className="w-4 h-4 shrink-0" />
+                Application already sent for this job
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowRequestModal(true)}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-maroon to-gold text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity btn-press shadow-md shadow-maroon/20"
+              >
+                <Send className="w-4 h-4" />
+                Apply / Send Request
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Contact Section */}
         <div className={`rounded-2xl border p-6 ${isDark ? 'bg-void border-void-border' : 'bg-white border-light-border'}`}>
           <div className="flex items-center gap-2 mb-4">
@@ -208,6 +243,15 @@ export default function JobDetail() {
       </main>
 
       <SubscriptionModal isOpen={showModal} onClose={() => setShowModal(false)} />
+      <SendRequestModal
+        isOpen={showRequestModal}
+        onClose={() => setShowRequestModal(false)}
+        targetId={job.id}
+        targetName={job.postedBy}
+        targetRole="family"
+        targetCategory={categoryLabels[job.category] ?? job.category}
+        targetLocation={job.location}
+      />
     </div>
   );
 }

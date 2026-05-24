@@ -1,19 +1,43 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Mail, MapPin, Check, X, MessageSquare } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 import { MOCK_FAMILY_CONTACT_REQUESTS, type ContactRequest } from '../../../data/dashboardMockData';
+import { useContactRequests } from '../../../context/ContactRequestContext';
 import DashboardEmptyState from '../../../components/dashboard/DashboardEmptyState';
 import DashboardBadge from '../../../components/dashboard/DashboardBadge';
 
 export default function FamilyContactRequests() {
   const { isDark } = useTheme();
-  const [requests, setRequests] = useState<ContactRequest[]>(MOCK_FAMILY_CONTACT_REQUESTS);
+  const { familyInbox, updateStatus: contextUpdateStatus } = useContactRequests();
+  const [mockRequests, setMockRequests] = useState<ContactRequest[]>(MOCK_FAMILY_CONTACT_REQUESTS);
   const [filter, setFilter] = useState<'all' | 'pending' | 'accepted' | 'declined'>('all');
 
-  const filtered = filter === 'all' ? requests : requests.filter((r) => r.status === filter);
+  // Merge real requests (from caregivers applying to this family) with mock data
+  const allRequests: ContactRequest[] = useMemo(() => [
+    ...familyInbox.map((r) => ({
+      id: r.id,
+      fromName: r.fromName,
+      fromInitials: r.fromInitials,
+      fromColor: r.fromColor,
+      fromRole: r.fromRole,
+      category: r.category,
+      location: r.location,
+      date: r.date,
+      status: r.status,
+      message: r.message,
+    })),
+    ...mockRequests,
+  ], [familyInbox, mockRequests]);
+
+  const filtered = filter === 'all' ? allRequests : allRequests.filter((r) => r.status === filter);
 
   const updateStatus = (id: string, status: 'accepted' | 'declined') => {
-    setRequests((prev) => prev.map((r) => r.id === id ? { ...r, status } : r));
+    // Check if it's a real request or mock
+    if (familyInbox.some((r) => r.id === id)) {
+      contextUpdateStatus(id, status);
+    } else {
+      setMockRequests((prev) => prev.map((r) => r.id === id ? { ...r, status } : r));
+    }
   };
 
   return (
@@ -44,7 +68,7 @@ export default function FamilyContactRequests() {
             {f.charAt(0).toUpperCase() + f.slice(1)}
             {f !== 'all' && (
               <span className="ml-1.5 text-xs opacity-70">
-                ({requests.filter((r) => r.status === f).length})
+                ({allRequests.filter((r) => r.status === f).length})
               </span>
             )}
           </button>

@@ -1,19 +1,42 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Mail, MapPin, Check, X, MessageSquare } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 import { MOCK_CAREGIVER_CONTACT_REQUESTS, type ContactRequest } from '../../../data/dashboardMockData';
+import { useContactRequests } from '../../../context/ContactRequestContext';
 import DashboardEmptyState from '../../../components/dashboard/DashboardEmptyState';
 import DashboardBadge from '../../../components/dashboard/DashboardBadge';
 
 export default function CaregiverContactRequests() {
   const { isDark } = useTheme();
-  const [requests, setRequests] = useState<ContactRequest[]>(MOCK_CAREGIVER_CONTACT_REQUESTS);
+  const { caregiverInbox, updateStatus: contextUpdateStatus } = useContactRequests();
+  const [mockRequests, setMockRequests] = useState<ContactRequest[]>(MOCK_CAREGIVER_CONTACT_REQUESTS);
   const [filter, setFilter] = useState<'all' | 'pending' | 'accepted' | 'declined'>('all');
 
-  const filtered = filter === 'all' ? requests : requests.filter((r) => r.status === filter);
+  // Merge real requests (from families contacting this caregiver) with mock data
+  const allRequests: ContactRequest[] = useMemo(() => [
+    ...caregiverInbox.map((r) => ({
+      id: r.id,
+      fromName: r.fromName,
+      fromInitials: r.fromInitials,
+      fromColor: r.fromColor,
+      fromRole: r.fromRole,
+      category: r.category,
+      location: r.location,
+      date: r.date,
+      status: r.status,
+      message: r.message,
+    })),
+    ...mockRequests,
+  ], [caregiverInbox, mockRequests]);
+
+  const filtered = filter === 'all' ? allRequests : allRequests.filter((r) => r.status === filter);
 
   const updateStatus = (id: string, status: 'accepted' | 'declined') => {
-    setRequests((prev) => prev.map((r) => r.id === id ? { ...r, status } : r));
+    if (caregiverInbox.some((r) => r.id === id)) {
+      contextUpdateStatus(id, status);
+    } else {
+      setMockRequests((prev) => prev.map((r) => r.id === id ? { ...r, status } : r));
+    }
   };
 
   return (
@@ -42,7 +65,7 @@ export default function CaregiverContactRequests() {
             {f.charAt(0).toUpperCase() + f.slice(1)}
             {f !== 'all' && (
               <span className="ml-1.5 text-xs opacity-70">
-                ({requests.filter((r) => r.status === f).length})
+                ({allRequests.filter((r) => r.status === f).length})
               </span>
             )}
           </button>
