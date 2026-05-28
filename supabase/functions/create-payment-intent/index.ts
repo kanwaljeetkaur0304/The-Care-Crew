@@ -10,8 +10,8 @@ const corsHeaders = {
 };
 
 const PLANS: Record<string, { price: number; durationDays: number }> = {
-  '1m': { price: 2900, durationDays: 30 },
-  '2m': { price: 4900, durationDays: 60 },
+  '1m': { price: 1900, durationDays: 30 },
+  '2m': { price: 3900, durationDays: 60 },
   '3m': { price: 6900, durationDays: 90 },
 };
 
