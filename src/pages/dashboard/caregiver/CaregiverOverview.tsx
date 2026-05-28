@@ -4,6 +4,7 @@ import { Eye, Mail, Star, TrendingUp, ArrowRight, Sparkles, Camera, Award } from
 import { useTheme } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useContactRequests } from '../../../context/ContactRequestContext';
+import { useMessages } from '../../../context/MessagesContext';
 import { supabase, isSupabaseConfigured } from '../../../lib/supabase';
 import DashboardStatCard from '../../../components/dashboard/DashboardStatCard';
 import {
@@ -11,26 +12,76 @@ import {
   MOCK_CAREGIVER_PROFILE,
   MOCK_REVIEWS,
   MOCK_NOTIFICATIONS,
+  type Review,
+  type Notification,
 } from '../../../data/dashboardMockData';
 import { computeJobMatches } from '../../../utils/jobMatchingAlgorithm';
 import { computeProfileCompletion } from '../../../utils/profileCompletion';
+
+// ── Same key used in CaregiverListing.tsx to persist pause/active ─────────────
+const LISTING_STATUS_KEY = 'carecrew_listing_status';
+
+// ── Helpers for mapping Supabase review rows to display shape ─────────────────
+const REVIEW_COLORS = [
+  'from-indigo-400 to-blue-500',
+  'from-amber-400 to-orange-500',
+  'from-emerald-400 to-teal-500',
+  'from-rose-400 to-pink-500',
+  'from-violet-400 to-purple-500',
+];
+function colorForName(name: string) {
+  const hash = name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  return REVIEW_COLORS[hash % REVIEW_COLORS.length];
+}
+function initialsForName(name: string) {
+  return name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+}
+
+// ── Convert ISO timestamp to relative display string ──────────────────────────
+function toRelativeTime(iso: string): string {
+  const date = new Date(iso);
+  if (isNaN(date.getTime())) return iso;
+  const diffMs    = Date.now() - date.getTime();
+  const diffMins  = Math.floor(diffMs / 60_000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays  = Math.floor(diffHours / 24);
+  if (diffMins  <  1) return 'Just now';
+  if (diffMins  < 60) return `${diffMins} min ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays  === 1) return 'Yesterday';
+  if (diffDays  <  7) return `${diffDays} days ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
 
 export default function CaregiverOverview() {
   const { isDark } = useTheme();
   const { user } = useAuth();
   const { caregiverInbox } = useContactRequests();
+  const { threads } = useMessages();
   const navigate = useNavigate();
 
   // ── 1. Profile Views — live from Supabase ────────────────────────────────────
   const [profileViews, setProfileViews] = useState<number | null>(null);
-  const [viewsTrend, setViewsTrend]     = useState<number | null>(null);
+  const [viewsTrend,   setViewsTrend]   = useState<number | null>(null);
 
   // ── 2. Contact Requests — live from Supabase, fallback to localStorage ────────
-  const [supabaseContactCount,   setSupabaseContactCount]   = useState<number | null>(null);
-  const [supabasePendingCount,   setSupabasePendingCount]   = useState<number | null>(null);
+  const [supabaseContactCount, setSupabaseContactCount] = useState<number | null>(null);
+  const [supabasePendingCount, setSupabasePendingCount] = useState<number | null>(null);
 
-  // ── 3. Avg Rating — live from Supabase, fallback to mock reviews ──────────────
+  // ── 3. Avg Rating — live from Supabase, fallback to mock ─────────────────────
   const [supabaseRating, setSupabaseRating] = useState<string | null>(null);
+
+  // ── 4. Recent Reviews — live from Supabase, fallback to mock ─────────────────
+  const [recentReviews, setRecentReviews] = useState<Review[]>(MOCK_REVIEWS.slice(0, 2));
+
+  // ── 5. Listing status — read from localStorage (same key Listing page writes) ─
+  const [listingStatus] = useState<'active' | 'paused'>(() => {
+    try {
+      const stored = localStorage.getItem(LISTING_STATUS_KEY);
+      if (stored === 'paused' || stored === 'active') return stored;
+    } catch { /* ignore */ }
+    return MOCK_CAREGIVER_LISTING.status;
+  });
 
   useEffect(() => {
     if (!user || !isSupabaseConfigured) return;
@@ -39,14 +90,14 @@ export default function CaregiverOverview() {
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
 
-    // ── Profile Views: total count ──
+    // Profile Views: total
     supabase
       .from('profile_views')
       .select('*', { count: 'exact', head: true })
       .eq('caregiver_id', user.id)
       .then(({ count }) => { if (count !== null) setProfileViews(count); });
 
-    // ── Profile Views: this-month trend ──
+    // Profile Views: this-month trend
     supabase
       .from('profile_views')
       .select('*', { count: 'exact', head: true })
@@ -54,7 +105,7 @@ export default function CaregiverOverview() {
       .gte('viewed_at', startOfMonth.toISOString())
       .then(({ count }) => { if (count !== null) setViewsTrend(count); });
 
-    // ── Contact Requests: total + pending breakdown ──
+    // Contact Requests: total + pending breakdown
     supabase
       .from('contact_requests')
       .select('status')
@@ -66,7 +117,7 @@ export default function CaregiverOverview() {
         }
       });
 
-    // ── Avg Rating: compute average from real reviews ──
+    // Avg Rating: average from real reviews
     supabase
       .from('reviews')
       .select('rating')
@@ -78,40 +129,106 @@ export default function CaregiverOverview() {
         }
       });
 
+    // Recent Reviews: latest 2 real reviews
+    supabase
+      .from('reviews')
+      .select('*')
+      .eq('caregiver_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(2)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          const mapped: Review[] = data.map((r) => ({
+            id:           r.id,
+            fromFamily:   r.from_family_name,
+            fromInitials: initialsForName(r.from_family_name),
+            fromColor:    colorForName(r.from_family_name),
+            rating:       r.rating,
+            comment:      r.comment ?? '',
+            date:         r.created_at,
+            category:     r.category ?? '',
+          }));
+          setRecentReviews(mapped);
+        }
+        // If 0 real reviews, the default state (MOCK_REVIEWS) stays shown as demo
+      });
+
   }, [user]);
 
   // ── Derived: Contact Requests ─────────────────────────────────────────────────
-  // Priority: Supabase count → localStorage inbox (NO mock seed padding)
   const totalContactRequests = supabaseContactCount ?? caregiverInbox.length;
   const pendingRequests       = supabasePendingCount  ?? caregiverInbox.filter((r) => r.status === 'pending').length;
 
   // ── Derived: Avg Rating ───────────────────────────────────────────────────────
-  // Priority: Supabase avg → calculated from mock reviews as demo fallback
   const mockAvgRating = MOCK_REVIEWS.length
     ? (MOCK_REVIEWS.reduce((a, r) => a + r.rating, 0) / MOCK_REVIEWS.length).toFixed(1)
     : '—';
   const avgRating = supabaseRating ?? mockAvgRating;
 
-  // ── Profile Completion: dynamically computed from actual profile fields ──
+  // ── Derived: Profile Completion ───────────────────────────────────────────────
   const { score: profileCompletion, hint: completionHint } = useMemo(
     () => computeProfileCompletion(MOCK_CAREGIVER_PROFILE),
     []
   );
 
-  // ── Job Matches: real count from the scoring algorithm ──
+  // ── Derived: Job Matches count ────────────────────────────────────────────────
   const jobMatchCount = useMemo(
     () => computeJobMatches(MOCK_CAREGIVER_PROFILE, MOCK_CAREGIVER_LISTING).length,
     []
   );
 
-  // NOTE: Profile Views (MOCK_CAREGIVER_LISTING.views) requires a backend to track
-  // accurately. It remains a mock value until Supabase view-tracking is wired up.
+  // ── Derived: Recent Activity — built from REAL events first ──────────────────
+  // Priority: unread messages → pending contact requests → mock notifications (fill gaps)
+  const recentActivity = useMemo((): Notification[] => {
+    const items: Notification[] = [];
+
+    // Real unread message threads
+    threads
+      .filter((t) => t.unread > 0)
+      .slice(0, 2)
+      .forEach((t) => {
+        items.push({
+          id:     `msg-${t.id}`,
+          type:   'message',
+          title:  `New message from ${t.withName}`,
+          body:   t.lastMessage,
+          time:   t.lastTime,
+          read:   false,
+          action: '/dashboard/messages',
+        });
+      });
+
+    // Real pending contact requests
+    caregiverInbox
+      .filter((r) => r.status === 'pending')
+      .slice(0, 2)
+      .forEach((r) => {
+        items.push({
+          id:     `req-${r.id}`,
+          type:   'contact',
+          title:  'New contact request',
+          body:   `${r.fromName} sent you a contact request for ${r.category} in ${r.location}`,
+          time:   toRelativeTime(r.date),
+          read:   false,
+          action: '/dashboard/contact-requests',
+        });
+      });
+
+    // Fill remaining slots with mock notifications (skip any already covered above)
+    const usedIds = new Set(items.map((i) => i.id));
+    for (const n of MOCK_NOTIFICATIONS) {
+      if (items.length >= 4) break;
+      if (!usedIds.has(n.id)) items.push(n);
+    }
+
+    return items.slice(0, 4);
+  }, [threads, caregiverInbox]);
 
   const quickActions = [
-    { label: 'Edit Listing', icon: TrendingUp, href: '/dashboard/listing', color: 'bg-maroon/10 text-maroon' },
-    { label: 'Job Matches', icon: Sparkles, href: '/dashboard/job-matches', color: 'bg-gold/10 text-gold' },
-    { label: 'Add Photos', icon: Camera, href: '/dashboard/photos', color: 'bg-blue-500/10 text-blue-500' },
-    { label: 'References', icon: Award, href: '/dashboard/references', color: 'bg-purple-500/10 text-purple-500' },
+    { label: 'Edit Listing', icon: TrendingUp, href: '/dashboard/listing',    color: 'bg-maroon/10 text-maroon' },
+    { label: 'Job Matches',  icon: Sparkles,   href: '/dashboard/job-matches', color: 'bg-gold/10 text-gold' },
+    { label: 'Add Photos',   icon: Camera,     href: '/dashboard/photos',      color: 'bg-blue-500/10 text-blue-500' },
+    { label: 'References',   icon: Award,      href: '/dashboard/references',  color: 'bg-purple-500/10 text-purple-500' },
   ];
 
   return (
@@ -144,7 +261,6 @@ export default function CaregiverOverview() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Profile Views — live from Supabase, falls back to mock for demo accounts */}
         <DashboardStatCard
           label="Profile Views"
           value={profileViews ?? MOCK_CAREGIVER_LISTING.views}
@@ -153,11 +269,15 @@ export default function CaregiverOverview() {
           trendUp
           color="maroon"
         />
-        {/* Contact Requests — real inbox (caregiverInbox) + seeded mock data */}
-        <DashboardStatCard label="Contact Requests" value={totalContactRequests} icon={Mail} trend={pendingRequests > 0 ? `${pendingRequests} pending` : 'all reviewed'} trendUp={pendingRequests > 0} color="blue" />
-        {/* Avg Rating — calculated from reviews array */}
+        <DashboardStatCard
+          label="Contact Requests"
+          value={totalContactRequests}
+          icon={Mail}
+          trend={pendingRequests > 0 ? `${pendingRequests} pending` : 'all reviewed'}
+          trendUp={pendingRequests > 0}
+          color="blue"
+        />
         <DashboardStatCard label="Avg. Rating" value={avgRating} icon={Star} color="gold" />
-        {/* Job Matches — real count from job matches data */}
         <DashboardStatCard label="Job Matches" value={jobMatchCount} icon={Sparkles} trend="new today" trendUp color="emerald" />
       </div>
 
@@ -186,7 +306,7 @@ export default function CaregiverOverview() {
         </div>
       </div>
 
-      {/* Listing Status */}
+      {/* My Listing — status badge reads from localStorage (same source as Listing page) */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className={`font-display text-base font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>
@@ -202,15 +322,20 @@ export default function CaregiverOverview() {
         <div className={`p-5 rounded-2xl border ${isDark ? 'bg-void-light border-void-border' : 'bg-white border-light-border'}`}>
           <div className="flex items-start justify-between gap-3 mb-3">
             <div>
-              <h4 className={`font-display font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>{MOCK_CAREGIVER_LISTING.title}</h4>
-              <p className={`text-sm mt-0.5 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>{MOCK_CAREGIVER_LISTING.location} · {MOCK_CAREGIVER_LISTING.rate}</p>
+              <h4 className={`font-display font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>
+                {MOCK_CAREGIVER_LISTING.title}
+              </h4>
+              <p className={`text-sm mt-0.5 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
+                {MOCK_CAREGIVER_LISTING.location} · {MOCK_CAREGIVER_LISTING.rate}
+              </p>
             </div>
+            {/* Badge reads real status from localStorage */}
             <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border shrink-0 ${
-              MOCK_CAREGIVER_LISTING.status === 'active'
+              listingStatus === 'active'
                 ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
                 : 'bg-amber-100 text-amber-700 border-amber-200'
             }`}>
-              {MOCK_CAREGIVER_LISTING.status.charAt(0).toUpperCase() + MOCK_CAREGIVER_LISTING.status.slice(1)}
+              {listingStatus.charAt(0).toUpperCase() + listingStatus.slice(1)}
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -223,7 +348,7 @@ export default function CaregiverOverview() {
         </div>
       </div>
 
-      {/* Recent Reviews */}
+      {/* Recent Reviews — real from Supabase, falls back to mock for demo */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className={`font-display text-base font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>
@@ -237,7 +362,7 @@ export default function CaregiverOverview() {
           </button>
         </div>
         <div className="space-y-3">
-          {MOCK_REVIEWS.slice(0, 2).map((review) => (
+          {recentReviews.map((review) => (
             <div key={review.id} className={`p-4 rounded-2xl border ${isDark ? 'bg-void-light border-void-border' : 'bg-white border-light-border'}`}>
               <div className="flex items-center gap-2 mb-2">
                 <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${review.fromColor} flex items-center justify-center text-xs font-bold text-white shrink-0`}>
@@ -261,7 +386,7 @@ export default function CaregiverOverview() {
         </div>
       </div>
 
-      {/* Recent Notifications */}
+      {/* Recent Activity — real messages + real contact requests, mock fills gaps */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className={`font-display text-base font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>
@@ -275,8 +400,14 @@ export default function CaregiverOverview() {
           </button>
         </div>
         <div className={`rounded-2xl border divide-y ${isDark ? 'bg-void-light border-void-border divide-void-border' : 'bg-white border-light-border divide-light-border'}`}>
-          {MOCK_NOTIFICATIONS.slice(0, 4).map((n) => (
-            <div key={n.id} className={`flex items-start gap-3 p-4 ${!n.read ? isDark ? 'bg-gold/5' : 'bg-maroon/5' : ''}`}>
+          {recentActivity.map((n) => (
+            <div
+              key={n.id}
+              onClick={() => n.action && navigate(n.action)}
+              className={`flex items-start gap-3 p-4 ${n.action ? 'cursor-pointer' : ''} ${
+                !n.read ? (isDark ? 'bg-gold/5' : 'bg-maroon/5') : ''
+              }`}
+            >
               <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${!n.read ? 'bg-maroon' : isDark ? 'bg-void-border' : 'bg-light-border'}`} />
               <div className="flex-1 min-w-0">
                 <div className={`text-sm font-medium ${isDark ? 'text-ink' : 'text-light-text'}`}>{n.title}</div>
