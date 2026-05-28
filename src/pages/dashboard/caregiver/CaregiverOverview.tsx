@@ -8,8 +8,6 @@ import { useMessages } from '../../../context/MessagesContext';
 import { supabase, isSupabaseConfigured } from '../../../lib/supabase';
 import DashboardStatCard from '../../../components/dashboard/DashboardStatCard';
 import {
-  MOCK_CAREGIVER_LISTING,
-  MOCK_CAREGIVER_PROFILE,
   MOCK_REVIEWS,
   MOCK_NOTIFICATIONS,
   type Review,
@@ -17,6 +15,7 @@ import {
 } from '../../../data/dashboardMockData';
 import { computeJobMatches } from '../../../utils/jobMatchingAlgorithm';
 import { computeProfileCompletion } from '../../../utils/profileCompletion';
+import { useCaregiverProfile } from '../../../hooks/useCaregiverProfile';
 
 // ── Same key used in CaregiverListing.tsx to persist pause/active ─────────────
 const LISTING_STATUS_KEY = 'carecrew_listing_status';
@@ -59,6 +58,7 @@ export default function CaregiverOverview() {
   const { caregiverInbox } = useContactRequests();
   const { threads } = useMessages();
   const navigate = useNavigate();
+  const { profile, listing } = useCaregiverProfile();
 
   // ── 1. Profile Views — live from Supabase ────────────────────────────────────
   const [profileViews, setProfileViews] = useState<number | null>(null);
@@ -74,13 +74,13 @@ export default function CaregiverOverview() {
   // ── 4. Recent Reviews — live from Supabase, fallback to mock ─────────────────
   const [recentReviews, setRecentReviews] = useState<Review[]>(MOCK_REVIEWS.slice(0, 2));
 
-  // ── 5. Listing status — read from localStorage (same key Listing page writes) ─
+  // ── 5. Listing status — localStorage takes precedence (same key Listing page writes) ─
   const [listingStatus] = useState<'active' | 'paused'>(() => {
     try {
       const stored = localStorage.getItem(LISTING_STATUS_KEY);
       if (stored === 'paused' || stored === 'active') return stored;
     } catch { /* ignore */ }
-    return MOCK_CAREGIVER_LISTING.status;
+    return listing.status;
   });
 
   useEffect(() => {
@@ -167,14 +167,14 @@ export default function CaregiverOverview() {
 
   // ── Derived: Profile Completion ───────────────────────────────────────────────
   const { score: profileCompletion, hint: completionHint } = useMemo(
-    () => computeProfileCompletion(MOCK_CAREGIVER_PROFILE),
-    []
+    () => computeProfileCompletion(profile),
+    [profile]
   );
 
   // ── Derived: Job Matches count ────────────────────────────────────────────────
   const jobMatchCount = useMemo(
-    () => computeJobMatches(MOCK_CAREGIVER_PROFILE, MOCK_CAREGIVER_LISTING).length,
-    []
+    () => computeJobMatches(profile, listing).length,
+    [profile, listing]
   );
 
   // ── Derived: Recent Activity — built from REAL events first ──────────────────
@@ -263,7 +263,7 @@ export default function CaregiverOverview() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <DashboardStatCard
           label="Profile Views"
-          value={profileViews ?? MOCK_CAREGIVER_LISTING.views}
+          value={profileViews ?? listing.views}
           icon={Eye}
           trend={viewsTrend !== null ? `${viewsTrend} this month` : 'this month'}
           trendUp
@@ -323,13 +323,13 @@ export default function CaregiverOverview() {
           <div className="flex items-start justify-between gap-3 mb-3">
             <div>
               <h4 className={`font-display font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>
-                {MOCK_CAREGIVER_LISTING.title}
+                {listing.title || profile.name + ' — Caregiver'}
               </h4>
               <p className={`text-sm mt-0.5 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
-                {MOCK_CAREGIVER_LISTING.location} · {MOCK_CAREGIVER_LISTING.rate}
+                {listing.location} · {listing.rate}
               </p>
             </div>
-            {/* Badge reads real status from localStorage */}
+            {/* Badge reads real status from localStorage (same key Listing page writes) */}
             <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border shrink-0 ${
               listingStatus === 'active'
                 ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
@@ -339,7 +339,7 @@ export default function CaregiverOverview() {
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
-            {MOCK_CAREGIVER_LISTING.languages.map((lang) => (
+            {listing.languages.map((lang) => (
               <span key={lang} className={`px-2.5 py-0.5 rounded-md text-xs border ${isDark ? 'bg-void border-void-border text-ink-muted' : 'bg-light-bg border-light-border text-light-text-muted'}`}>
                 {lang}
               </span>

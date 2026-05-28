@@ -2,25 +2,30 @@ import { useNavigate } from 'react-router-dom';
 import { Briefcase, Heart, Mail, MessageSquare, Bell, TrendingUp, ArrowRight, Eye } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
+import { useMessages } from '../../../context/MessagesContext';
+import { useContactRequests } from '../../../context/ContactRequestContext';
 import DashboardStatCard from '../../../components/dashboard/DashboardStatCard';
 import {
-  MOCK_JOB_POSTS,
   MOCK_SAVED_CAREGIVERS,
-  MOCK_FAMILY_CONTACT_REQUESTS,
-  MOCK_MESSAGE_THREADS,
   MOCK_NOTIFICATIONS,
   MOCK_SUBSCRIPTION,
 } from '../../../data/dashboardMockData';
+import { useFamilyProfile } from '../../../hooks/useFamilyProfile';
+import { useJobPosts } from '../../../hooks/useJobPosts';
 
 export default function FamilyOverview() {
   const { isDark } = useTheme();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { profile } = useFamilyProfile();
+  const { jobs } = useJobPosts();
+  const { threads } = useMessages();
+  const { familyInbox } = useContactRequests();
 
-  const activeJobs = MOCK_JOB_POSTS.filter((j) => j.status === 'active').length;
-  const unreadMessages = MOCK_MESSAGE_THREADS.reduce((acc, t) => acc + t.unread, 0);
+  const activeJobs = jobs.filter((j) => j.status === 'active').length;
+  const unreadMessages = threads.reduce((acc, t) => acc + t.unread, 0);
   const unreadNotifications = MOCK_NOTIFICATIONS.filter((n) => !n.read).length;
-  const pendingRequests = MOCK_FAMILY_CONTACT_REQUESTS.filter((r) => r.status === 'pending').length;
+  const pendingRequests = familyInbox.filter((r) => r.status === 'pending').length;
 
   const quickActions = [
     { label: 'Post a Job', icon: Briefcase, href: '/dashboard/job-posts', color: 'bg-maroon/10 text-maroon' },
@@ -34,7 +39,7 @@ export default function FamilyOverview() {
       {/* Welcome */}
       <div>
         <h2 className={`font-display text-2xl font-semibold mb-1 ${isDark ? 'text-ink' : 'text-light-text'}`}>
-          Welcome back, {user?.name.split(' ')[0]} 👋
+          Welcome back, {(profile.name || user?.name || '').split(' ')[0]} 👋
         </h2>
         <p className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
           Here is what is happening with your care search today.
@@ -107,7 +112,7 @@ export default function FamilyOverview() {
           </button>
         </div>
         <div className="space-y-3">
-          {MOCK_JOB_POSTS.slice(0, 2).map((job) => (
+          {jobs.slice(0, 2).map((job) => (
             <div
               key={job.id}
               className={`flex items-center justify-between p-4 rounded-2xl border ${

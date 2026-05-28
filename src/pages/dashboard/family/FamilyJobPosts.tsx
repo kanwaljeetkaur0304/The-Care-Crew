@@ -2,30 +2,20 @@ import { useState } from 'react';
 import { Plus, Eye, Users, Pause, Play, Trash2, Briefcase, MapPin, Calendar, Lock } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 import { useSubscription } from '../../../context/SubscriptionContext';
-import { MOCK_JOB_POSTS, type JobPost } from '../../../data/dashboardMockData';
 import DashboardEmptyState from '../../../components/dashboard/DashboardEmptyState';
 import DashboardBadge from '../../../components/dashboard/DashboardBadge';
 import ListingSubscriptionModal from '../../../components/ListingSubscriptionModal';
+import { useJobPosts } from '../../../hooks/useJobPosts';
 
 export default function FamilyJobPosts() {
   const { isDark } = useTheme();
   const { hasActiveListingSubscription, listingExpiryDate } = useSubscription();
-  const [jobs, setJobs] = useState<JobPost[]>(MOCK_JOB_POSTS);
+  const { jobs, toggleStatus, deleteJob } = useJobPosts();
   const [filter, setFilter] = useState<'all' | 'active' | 'paused' | 'expired'>('all');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showListingModal, setShowListingModal] = useState(false);
 
   const filtered = filter === 'all' ? jobs : jobs.filter((j) => j.status === filter);
-
-  const toggleStatus = (id: string) => {
-    setJobs((prev) =>
-      prev.map((j) =>
-        j.id === id
-          ? { ...j, status: j.status === 'active' ? 'paused' : 'active' }
-          : j
-      )
-    );
-  };
 
   const filterBtns = ['all', 'active', 'paused', 'expired'] as const;
 
@@ -38,7 +28,7 @@ export default function FamilyJobPosts() {
             My Job Posts
           </h2>
           <p className={`text-sm mt-1 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
-            {jobs.filter((j) => j.status === 'active').length} active · {jobs.length} total
+            {jobs.filter((j) => j.status === 'active').length} active · {jobs.length} total post{jobs.length !== 1 ? 's' : ''}
           </p>
         </div>
         <button
@@ -185,7 +175,9 @@ export default function FamilyJobPosts() {
                       {job.status === 'active' ? <><Pause className="w-3 h-3" /> Pause</> : <><Play className="w-3 h-3" /> Reactivate</>}
                     </button>
                   )}
-                  <button className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                  <button
+                    onClick={() => deleteJob(job.id)}
+                    className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
                     isDark ? 'border-red-400/20 text-red-400/60 hover:border-red-400/40 hover:text-red-400' : 'border-red-200 text-red-400 hover:border-red-300 hover:text-red-600'
                   }`}>
                     <Trash2 className="w-3 h-3" /> Delete

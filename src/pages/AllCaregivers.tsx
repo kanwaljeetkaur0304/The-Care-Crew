@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   MapPin, Star, DollarSign, Clock, Award, Search, ArrowLeft,
@@ -7,6 +7,7 @@ import {
 import { jobSeekers, categoryColors, categoryLabels, type JobSeeker } from '../data/mockData';
 import { useLocation } from '../context/LocationContext';
 import { useTheme } from '../context/ThemeContext';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const POPULAR_CITIES = [
   'All Locations', 'Toronto, ON', 'Vancouver, BC', 'Montreal, QC', 'Calgary, AB', 'Edmonton, AB',
@@ -58,6 +59,17 @@ function matchesAvailability(avail: string, filter: string): boolean {
   return true;
 }
 
+// Map caregiver_profiles category string → JobSeeker category key
+function mapCategory(categories: string[]): JobSeeker['category'] {
+  const first = (categories[0] ?? '').toLowerCase().replace(/\s/g, '');
+  if (first === 'nanny' || first === 'babysitter') return 'nanny';
+  if (first.includes('elder') || first.includes('eldercare')) return 'eldercare';
+  if (first === 'cook') return 'cook';
+  if (first === 'housekeeper') return 'housekeeper';
+  if (first === 'cleaner') return 'cleaner';
+  return 'nanny';
+}
+
 export default function AllCaregivers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -67,6 +79,51 @@ export default function AllCaregivers() {
   const [showFilters, setShowFilters] = useState(false);
   const { matchesCity, selectedCity, isAllLocations } = useLocation();
   const { isDark } = useTheme();
+
+  // Real caregiver data from Supabase — falls back to mock if empty/error
+  const [allSeekers, setAllSeekers] = useState<JobSeeker[]>(jobSeekers);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
+    Promise.all([
+      supabase.from('profiles').select('id, full_name').eq('role', 'caregiver'),
+      supabase.from('caregiver_profiles').select('*'),
+    ]).then(([profilesRes, caregiverRes]) => {
+      const profilesData = profilesRes.data ?? [];
+      const caregiverData = caregiverRes.data ?? [];
+
+      if (caregiverData.length === 0) return; // Keep mock data if no real caregivers yet
+
+      const nameMap: Record<string, string> = {};
+      profilesData.forEach((p) => { nameMap[p.id] = p.full_name; });
+
+      const realSeekers: JobSeeker[] = caregiverData
+        .filter((cp) => cp.listing_status !== 'paused') // Only show active listings
+        .map((cp) => ({
+          id: cp.id,
+          name: nameMap[cp.id] ?? 'Caregiver',
+          category: mapCategory(cp.categories ?? []),
+          location: cp.location ?? '',
+          experience: cp.experience ?? '1 year',
+          expectedSalary: cp.rate ?? 'Negotiable',
+          availability: (cp.availability ?? []).join(', ') || 'Flexible',
+          skills: cp.skills ?? [],
+          bio: cp.bio ?? '',
+          postedDate: new Date(cp.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          type: 'seeker' as const,
+          contactEmail: '', // Hidden until family subscribes
+          contactPhone: '', // Hidden until family subscribes
+          rating: undefined,
+          reviewCount: undefined,
+          socialLink: undefined,
+        }));
+
+      if (realSeekers.length > 0) {
+        setAllSeekers(realSeekers);
+      }
+    });
+  }, []);
 
   const categories = [
     { key: 'all', label: 'All Caregivers' },
@@ -78,7 +135,7 @@ export default function AllCaregivers() {
   ];
 
   const filtered = useMemo(() => {
-    return jobSeekers
+    return allSeekers
       .filter((s) => matchesCity(s.location))
       .filter((s) => locFilter === 'All Locations' || s.location.toLowerCase().includes(locFilter.split(',')[0].toLowerCase().trim()))
       .filter((s) => categoryFilter === 'all' || s.category === categoryFilter)
@@ -94,7 +151,7 @@ export default function AllCaregivers() {
           s.skills.some((skill) => skill.toLowerCase().includes(q))
         );
       });
-  }, [categoryFilter, expFilter, availFilter, locFilter, searchQuery, matchesCity]);
+  }, [allSeekers, categoryFilter, expFilter, availFilter, locFilter, searchQuery, matchesCity]);
 
   const activeFiltersCount =
     (categoryFilter !== 'all' ? 1 : 0) +
@@ -172,7 +229,7 @@ export default function AllCaregivers() {
                   <Users className={`w-5 h-5 ${isDark ? 'text-gold' : 'text-maroon'}`} />
                 </div>
                 <div>
-                  <div className={`font-display text-xl font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>{jobSeekers.length}+</div>
+                  <div className={`font-display text-xl font-semibold ${isDark ? 'text-ink' : 'text-light-text'}`}>{allSeekers.length}+</div>
                   <div className={`text-xs ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Caregivers</div>
                 </div>
               </div>

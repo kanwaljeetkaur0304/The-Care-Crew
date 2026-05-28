@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Eye, Mail, Edit2, Save, X, Pause, Play, FileText, Lock } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 import { useSubscription } from '../../../context/SubscriptionContext';
-import { MOCK_CAREGIVER_LISTING } from '../../../data/dashboardMockData';
 import DashboardStatCard from '../../../components/dashboard/DashboardStatCard';
 import DashboardBadge from '../../../components/dashboard/DashboardBadge';
 import ListingSubscriptionModal from '../../../components/ListingSubscriptionModal';
+import { useCaregiverProfile } from '../../../hooks/useCaregiverProfile';
 
 const SKILL_OPTIONS = ['Indian Cooking', 'Homework Help', 'Medication Reminders', 'Elder Companionship', 'Creative Play', 'First Aid', 'Driving', 'House Cleaning', 'Laundry', 'Grocery Shopping'];
 
@@ -30,23 +30,31 @@ const SLOT_COLORS_DARK: Record<string, string> = {
 
 const LISTING_STATUS_KEY = 'carecrew_listing_status';
 
-function loadListingStatus(): 'active' | 'paused' {
+function loadListingStatus(defaultStatus: 'active' | 'paused'): 'active' | 'paused' {
   try {
     const stored = localStorage.getItem(LISTING_STATUS_KEY);
     if (stored === 'paused' || stored === 'active') return stored;
   } catch { /* ignore */ }
-  return MOCK_CAREGIVER_LISTING.status;
+  return defaultStatus;
 }
 
 export default function CaregiverListing() {
   const { isDark } = useTheme();
   const { hasActiveListingSubscription, listingExpiryDate } = useSubscription();
+  const { listing: savedListing, updateListing } = useCaregiverProfile();
   const [editing, setEditing] = useState(false);
   const [listing, setListing] = useState({
-    ...MOCK_CAREGIVER_LISTING,
-    status: loadListingStatus(),          // ← persisted status
+    ...savedListing,
+    status: loadListingStatus(savedListing.status), // localStorage takes precedence
   });
   const [showModal, setShowModal] = useState(false);
+
+  // Sync when async hook data arrives (only if not currently editing)
+  useEffect(() => {
+    if (!editing) {
+      setListing({ ...savedListing, status: loadListingStatus(savedListing.status) });
+    }
+  }, [savedListing, editing]);
 
   const toggleSkill = (skill: string) => {
     setListing((p) => ({
@@ -70,6 +78,8 @@ export default function CaregiverListing() {
     setListing((p) => {
       const next = p.status === 'active' ? 'paused' : 'active';
       try { localStorage.setItem(LISTING_STATUS_KEY, next); } catch { /* ignore */ }
+      // Persist to Supabase for real users
+      updateListing({ status: next });
       return { ...p, status: next };
     });
   };
@@ -355,7 +365,10 @@ export default function CaregiverListing() {
 
       {editing && (
         <button
-          onClick={() => setEditing(false)}
+          onClick={async () => {
+            await updateListing(listing);
+            setEditing(false);
+          }}
           className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-maroon to-gold text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity btn-press shadow-md shadow-maroon/20"
         >
           <Save className="w-4 h-4" /> Save Listing

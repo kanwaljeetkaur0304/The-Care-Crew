@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Edit2, Save, X, CheckCircle, AlertCircle, ShieldCheck, User, Mail, Phone, MapPin, Search, Plus, Camera } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
-import { MOCK_CAREGIVER_PROFILE } from '../../../data/dashboardMockData';
 import { computeProfileCompletion } from '../../../utils/profileCompletion';
+import { useCaregiverProfile } from '../../../hooks/useCaregiverProfile';
 
 const LANG_OPTIONS = ['Hindi', 'Punjabi', 'Gujarati', 'Bengali', 'Tamil', 'Telugu', 'Urdu', 'English', 'Marathi', 'Malayalam'];
 const CATEGORY_OPTIONS = ['Nanny', 'Housekeeper', 'Cook', 'Elder Care', 'Babysitter', 'Driver'];
@@ -84,12 +84,18 @@ const SKILL_OPTIONS = [
 
 export default function CaregiverProfile() {
   const { isDark } = useTheme();
+  const { profile: savedProfile, updateProfile } = useCaregiverProfile();
   const [editing, setEditing] = useState(false);
-  const [profile, setProfile] = useState(MOCK_CAREGIVER_PROFILE);
+  const [profile, setProfile] = useState(savedProfile);
+
+  // Sync when async hook data arrives (only if not currently editing)
+  useEffect(() => {
+    if (!editing) setProfile(savedProfile);
+  }, [savedProfile, editing]);
 
   const [certSearch, setCertSearch] = useState('');
   const [skillSearch, setSkillSearch] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(profile.photoUrl ?? null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -517,7 +523,14 @@ export default function CaregiverProfile() {
 
       {editing && (
         <button
-          onClick={() => setEditing(false)}
+          onClick={async () => {
+            // Include avatarUrl as photoUrl if it was updated
+            const updates = avatarUrl && avatarUrl !== savedProfile.photoUrl
+              ? { ...profile, photoUrl: avatarUrl }
+              : profile;
+            await updateProfile(updates);
+            setEditing(false);
+          }}
           className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-maroon to-gold text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity btn-press shadow-md shadow-maroon/20"
         >
           <Save className="w-4 h-4" /> Save Changes
