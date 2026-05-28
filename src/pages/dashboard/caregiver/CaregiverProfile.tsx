@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Edit2, Save, X, CheckCircle, AlertCircle, ShieldCheck, User, Mail, Phone, MapPin, Search, Plus, Camera } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 import { MOCK_CAREGIVER_PROFILE } from '../../../data/dashboardMockData';
+import { computeProfileCompletion } from '../../../utils/profileCompletion';
 
 const LANG_OPTIONS = ['Hindi', 'Punjabi', 'Gujarati', 'Bengali', 'Tamil', 'Telugu', 'Urdu', 'English', 'Marathi', 'Malayalam'];
 const CATEGORY_OPTIONS = ['Nanny', 'Housekeeper', 'Cook', 'Elder Care', 'Babysitter', 'Driver'];
@@ -113,7 +114,7 @@ export default function CaregiverProfile() {
             My Profile
           </h2>
           <p className={`text-sm mt-1 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
-            Your public caregiver profile · {profile.profileCompletion}% complete
+            Your public caregiver profile · {computeProfileCompletion(profile).score}% complete
           </p>
         </div>
         <button

@@ -670,7 +670,8 @@ export interface CaregiverProfile {
   verifiedPhone: boolean;
   backgroundCheck: boolean;
   memberSince: string;
-  profileCompletion: number;
+  /** URL of uploaded profile photo — undefined means no photo (affects completion score) */
+  photoUrl?: string;
 }
 
 export const MOCK_CAREGIVER_PROFILE: CaregiverProfile = {
@@ -690,7 +691,7 @@ export const MOCK_CAREGIVER_PROFILE: CaregiverProfile = {
   verifiedPhone: true,
   backgroundCheck: true,
   memberSince: '2026-02-01',
-  profileCompletion: 88,
+  // photoUrl is intentionally absent → completion score = 88% (photo worth 12 pts)
 };
 
 // ─── Subscription Info ────────────────────────────────────────────────────────

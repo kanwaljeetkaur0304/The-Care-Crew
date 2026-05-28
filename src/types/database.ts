@@ -86,6 +86,63 @@ export type Database = {
         };
         Relationships: [];
       };
+      contact_requests: {
+        Row: {
+          id: string;
+          from_id: string | null;
+          from_name: string;
+          from_role: string;
+          to_id: string;
+          to_role: string;
+          category: string | null;
+          location: string | null;
+          message: string;
+          status: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          from_id?: string | null;
+          from_name: string;
+          from_role?: string;
+          to_id: string;
+          to_role?: string;
+          category?: string | null;
+          location?: string | null;
+          message: string;
+          status?: string;
+          created_at?: string;
+        };
+        Update: {
+          status?: string;
+        };
+        Relationships: [];
+      };
+      reviews: {
+        Row: {
+          id: string;
+          caregiver_id: string;
+          from_family_name: string;
+          rating: number;
+          comment: string | null;
+          category: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          caregiver_id: string;
+          from_family_name: string;
+          rating: number;
+          comment?: string | null;
+          category?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          rating?: number;
+          comment?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

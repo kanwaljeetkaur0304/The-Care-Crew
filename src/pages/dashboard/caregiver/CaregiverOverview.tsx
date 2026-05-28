@@ -10,10 +10,10 @@ import {
   MOCK_CAREGIVER_LISTING,
   MOCK_CAREGIVER_PROFILE,
   MOCK_REVIEWS,
-  MOCK_CAREGIVER_CONTACT_REQUESTS,
   MOCK_NOTIFICATIONS,
-  MOCK_JOB_MATCHES,
 } from '../../../data/dashboardMockData';
+import { computeJobMatches } from '../../../utils/jobMatchingAlgorithm';
+import { computeProfileCompletion } from '../../../utils/profileCompletion';
 
 export default function CaregiverOverview() {
   const { isDark } = useTheme();
@@ -21,9 +21,16 @@ export default function CaregiverOverview() {
   const { caregiverInbox } = useContactRequests();
   const navigate = useNavigate();
 
-  // ── Live profile view count from Supabase ───────────────────────────────────
+  // ── 1. Profile Views — live from Supabase ────────────────────────────────────
   const [profileViews, setProfileViews] = useState<number | null>(null);
-  const [viewsTrend, setViewsTrend] = useState<number | null>(null);
+  const [viewsTrend, setViewsTrend]     = useState<number | null>(null);
+
+  // ── 2. Contact Requests — live from Supabase, fallback to localStorage ────────
+  const [supabaseContactCount,   setSupabaseContactCount]   = useState<number | null>(null);
+  const [supabasePendingCount,   setSupabasePendingCount]   = useState<number | null>(null);
+
+  // ── 3. Avg Rating — live from Supabase, fallback to mock reviews ──────────────
+  const [supabaseRating, setSupabaseRating] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user || !isSupabaseConfigured) return;
@@ -32,44 +39,70 @@ export default function CaregiverOverview() {
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
 
-    // Total views for this caregiver
+    // ── Profile Views: total count ──
     supabase
       .from('profile_views')
       .select('*', { count: 'exact', head: true })
       .eq('caregiver_id', user.id)
-      .then(({ count }) => {
-        if (count !== null) setProfileViews(count);
-      });
+      .then(({ count }) => { if (count !== null) setProfileViews(count); });
 
-    // Views this month (for trend badge)
+    // ── Profile Views: this-month trend ──
     supabase
       .from('profile_views')
       .select('*', { count: 'exact', head: true })
       .eq('caregiver_id', user.id)
       .gte('viewed_at', startOfMonth.toISOString())
-      .then(({ count }) => {
-        if (count !== null) setViewsTrend(count);
+      .then(({ count }) => { if (count !== null) setViewsTrend(count); });
+
+    // ── Contact Requests: total + pending breakdown ──
+    supabase
+      .from('contact_requests')
+      .select('status')
+      .eq('to_id', user.id)
+      .then(({ data }) => {
+        if (data) {
+          setSupabaseContactCount(data.length);
+          setSupabasePendingCount(data.filter((r) => r.status === 'pending').length);
+        }
       });
+
+    // ── Avg Rating: compute average from real reviews ──
+    supabase
+      .from('reviews')
+      .select('rating')
+      .eq('caregiver_id', user.id)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          const avg = data.reduce((sum, r) => sum + r.rating, 0) / data.length;
+          setSupabaseRating(avg.toFixed(1));
+        }
+      });
+
   }, [user]);
 
-  // ── Contact Requests: real inbox (from families who sent requests) + mock data ──
-  const allRequests = useMemo(
-    () => [...caregiverInbox, ...MOCK_CAREGIVER_CONTACT_REQUESTS],
-    [caregiverInbox]
-  );
-  const totalContactRequests = allRequests.length;
-  const pendingRequests = allRequests.filter((r) => r.status === 'pending').length;
+  // ── Derived: Contact Requests ─────────────────────────────────────────────────
+  // Priority: Supabase count → localStorage inbox (NO mock seed padding)
+  const totalContactRequests = supabaseContactCount ?? caregiverInbox.length;
+  const pendingRequests       = supabasePendingCount  ?? caregiverInbox.filter((r) => r.status === 'pending').length;
 
-  // ── Avg Rating: calculated from reviews (accurate when reviews are real) ──
-  const avgRating = MOCK_REVIEWS.length
+  // ── Derived: Avg Rating ───────────────────────────────────────────────────────
+  // Priority: Supabase avg → calculated from mock reviews as demo fallback
+  const mockAvgRating = MOCK_REVIEWS.length
     ? (MOCK_REVIEWS.reduce((a, r) => a + r.rating, 0) / MOCK_REVIEWS.length).toFixed(1)
     : '—';
+  const avgRating = supabaseRating ?? mockAvgRating;
 
-  // ── Profile Completion: from profile data ──
-  const profileCompletion = MOCK_CAREGIVER_PROFILE.profileCompletion;
+  // ── Profile Completion: dynamically computed from actual profile fields ──
+  const { score: profileCompletion, hint: completionHint } = useMemo(
+    () => computeProfileCompletion(MOCK_CAREGIVER_PROFILE),
+    []
+  );
 
-  // ── Job Matches: count of actual job matches array ──
-  const jobMatchCount = MOCK_JOB_MATCHES.length;
+  // ── Job Matches: real count from the scoring algorithm ──
+  const jobMatchCount = useMemo(
+    () => computeJobMatches(MOCK_CAREGIVER_PROFILE, MOCK_CAREGIVER_LISTING).length,
+    []
+  );
 
   // NOTE: Profile Views (MOCK_CAREGIVER_LISTING.views) requires a backend to track
   // accurately. It remains a mock value until Supabase view-tracking is wired up.
@@ -105,7 +138,7 @@ export default function CaregiverOverview() {
           <div className="h-full bg-gradient-to-r from-maroon to-gold rounded-full" style={{ width: `${profileCompletion}%` }} />
         </div>
         <p className={`text-xs mt-2.5 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
-          Add a profile photo to reach 100% and get 3× more contact requests
+          {completionHint}
         </p>
       </div>
 

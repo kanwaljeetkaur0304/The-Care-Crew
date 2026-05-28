@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Sparkles, MapPin, Calendar, BookmarkPlus, BookmarkCheck, ArrowRight, Filter } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
-import { MOCK_JOB_MATCHES, type JobMatch } from '../../../data/dashboardMockData';
+import { MOCK_CAREGIVER_PROFILE, MOCK_CAREGIVER_LISTING, type JobMatch } from '../../../data/dashboardMockData';
+import { computeJobMatches } from '../../../utils/jobMatchingAlgorithm';
 import DashboardEmptyState from '../../../components/dashboard/DashboardEmptyState';
 import ApplyModal from '../../../components/ApplyModal';
 
@@ -13,7 +14,10 @@ const scoreColor = (score: number) => {
 
 export default function CaregiverJobMatches() {
   const { isDark } = useTheme();
-  const [matches, setMatches] = useState<JobMatch[]>(MOCK_JOB_MATCHES);
+  // Lazy-initialise so the algorithm runs once and saved state persists within the session
+  const [matches, setMatches] = useState<JobMatch[]>(() =>
+    computeJobMatches(MOCK_CAREGIVER_PROFILE, MOCK_CAREGIVER_LISTING)
+  );
   const [filter, setFilter] = useState<'all' | 'saved'>('all');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [applyJob, setApplyJob] = useState<JobMatch | null>(null);

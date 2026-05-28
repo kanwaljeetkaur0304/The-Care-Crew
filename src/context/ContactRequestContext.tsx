@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export interface ContactRequest {
   id: string;
@@ -82,6 +83,23 @@ export function ContactRequestProvider({ children }: { children: ReactNode }) {
         date: new Date().toISOString(),
         status: 'pending',
       };
+
+      // ── Persist to Supabase so the caregiver's dashboard shows a real count ──
+      if (isSupabaseConfigured) {
+        supabase.from('contact_requests').insert({
+          id:        newReq.id,
+          from_id:   newReq.fromId || null,
+          from_name: newReq.fromName,
+          from_role: newReq.fromRole,
+          to_id:     newReq.toId,
+          to_role:   newReq.toRole,
+          category:  newReq.category || null,
+          location:  newReq.location || null,
+          message:   newReq.message,
+          status:    'pending',
+        }).then();
+      }
+
       setRequests((prev) => {
         const updated = [newReq, ...prev];
         save(updated);
