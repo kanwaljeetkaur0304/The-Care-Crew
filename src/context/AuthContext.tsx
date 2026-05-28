@@ -38,20 +38,32 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 async function userFromSession(session: Session | null): Promise<User | null> {
   if (!session?.user) return null;
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, role')
-    .eq('id', session.user.id)
-    .single();
-
   const meta = session.user.user_metadata as { full_name?: string; role?: UserRole };
 
-  return {
+  // Fallback user built from auth metadata — works even if profiles table is missing
+  const fallback: User = {
     id: session.user.id,
-    name: profile?.full_name ?? meta.full_name ?? 'User',
+    name: meta?.full_name ?? session.user.email?.split('@')[0] ?? 'User',
     email: session.user.email ?? '',
-    role: (profile?.role ?? meta.role ?? 'family') as UserRole,
+    role: (meta?.role ?? 'family') as UserRole,
   };
+
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name, role')
+      .eq('id', session.user.id)
+      .maybeSingle();
+
+    return {
+      ...fallback,
+      name: profile?.full_name ?? fallback.name,
+      role: (profile?.role ?? fallback.role) as UserRole,
+    };
+  } catch {
+    // profiles table unreachable — use metadata fallback
+    return fallback;
+  }
 }
 
 function mapAuthError(message: string): string {
@@ -108,16 +120,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setIsLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    setIsLoading(false);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (error) {
-      return { ok: false, error: mapAuthError(error.message) };
+      if (error) {
+        return { ok: false, error: mapAuthError(error.message) };
+      }
+
+      // Set user immediately from auth metadata — no DB round-trip needed.
+      // onAuthStateChange will also fire and may enrich the data from profiles.
+      const meta = data.user?.user_metadata as { full_name?: string; role?: UserRole };
+      setUser({
+        id: data.user!.id,
+        name: meta?.full_name ?? data.user!.email?.split('@')[0] ?? 'User',
+        email: data.user!.email ?? '',
+        role: (meta?.role ?? 'family') as UserRole,
+      });
+
+      return { ok: true };
+    } catch (err) {
+      console.error('Login error:', err);
+      return { ok: false, error: 'Sign in failed. Please try again.' };
+    } finally {
+      // Always reset loading — even if signInWithPassword throws
+      setIsLoading(false);
     }
-
-    const nextUser = await userFromSession(data.session);
-    setUser(nextUser);
-    return { ok: true };
   }, []);
 
   const register = useCallback(
@@ -133,30 +160,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setIsLoading(true);
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: name,
-            role,
-            phone,
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: name, role, phone },
           },
-        },
-      });
-      setIsLoading(false);
+        });
 
-      if (error) {
-        return { ok: false, error: mapAuthError(error.message) };
+        if (error) {
+          return { ok: false, error: mapAuthError(error.message) };
+        }
+
+        if (data.session) {
+          // Immediately set user from registration data — no DB round-trip
+          setUser({
+            id: data.user!.id,
+            name,
+            email,
+            role,
+          });
+          return { ok: true };
+        }
+
+        return { ok: true, needsEmailConfirmation: true };
+      } catch (err) {
+        console.error('Register error:', err);
+        return { ok: false, error: 'Registration failed. Please try again.' };
+      } finally {
+        setIsLoading(false);
       }
-
-      if (data.session) {
-        const nextUser = await userFromSession(data.session);
-        setUser(nextUser);
-        return { ok: true };
-      }
-
-      return { ok: true, needsEmailConfirmation: true };
     },
     []
   );

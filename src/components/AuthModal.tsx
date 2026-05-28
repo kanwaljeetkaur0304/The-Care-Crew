@@ -63,7 +63,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
         setTimeout(() => {
           setSuccess(false);
           onClose();
-        }, 1500);
+          navigate('/dashboard');
+        }, 900);
       } else {
         setError(result.error ?? 'Invalid email or password');
       }
