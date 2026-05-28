@@ -25,7 +25,8 @@ interface AuthContextType {
     email: string,
     password: string,
     role: UserRole,
-    phone?: string
+    phone?: string,
+    location?: string
   ) => Promise<AuthResult>;
   logout: () => Promise<void>;
   loginAsDemo: (role: UserRole) => void;
@@ -153,7 +154,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: string,
       password: string,
       role: UserRole,
-      phone?: string
+      phone?: string,
+      location?: string
     ): Promise<AuthResult> => {
       if (!isSupabaseConfigured) {
         return { ok: false, error: 'Supabase is not configured. Add your keys to .env' };
@@ -173,14 +175,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { ok: false, error: mapAuthError(error.message) };
         }
 
-        if (data.session) {
+        if (data.session && data.user) {
           // Immediately set user from registration data — no DB round-trip
-          setUser({
-            id: data.user!.id,
-            name,
-            email,
-            role,
-          });
+          setUser({ id: data.user.id, name, email, role });
+
+          // Save phone + location to the appropriate profile table (fire-and-forget)
+          const table = role === 'family' ? 'family_profiles' : 'caregiver_profiles';
+          const profileRow: Record<string, unknown> = { id: data.user.id };
+          if (phone)    profileRow.phone    = phone;
+          if (location) profileRow.location = location;
+          if (phone || location) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            supabase.from(table).upsert(profileRow as any).then(({ error: e }) => {
+              if (e) console.warn('Profile save after register:', e.message);
+            });
+          }
+
           return { ok: true };
         }
 
