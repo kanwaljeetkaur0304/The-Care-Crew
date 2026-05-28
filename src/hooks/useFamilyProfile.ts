@@ -38,9 +38,26 @@ export function useFamilyProfile(): UseFamilyProfileReturn {
       .maybeSingle()
       .then(({ data }) => {
         setIsLoading(false);
-        if (!data) return; // No row yet → keep mock defaults
 
-        const mapped: FamilyProfile = {
+        if (!data) {
+          // No row yet — show real auth data with empty extras (not mock)
+          setProfile({
+            name: user.name,
+            email: user.email,
+            phone: '',
+            location: '',
+            languages: [],
+            description: '',
+            lookingFor: [],
+            verifiedEmail: true,
+            verifiedPhone: false,
+            memberSince: new Date().toISOString(),
+            totalHires: 0,
+          });
+          return;
+        }
+
+        setProfile({
           name: user.name,
           email: user.email,
           phone: data.phone ?? '',
@@ -52,8 +69,7 @@ export function useFamilyProfile(): UseFamilyProfileReturn {
           verifiedPhone: false,
           memberSince: data.created_at,
           totalHires: 0,
-        };
-        setProfile(mapped);
+        });
       });
   }, [user]);
 
