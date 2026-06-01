@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, Bell, Sun, Moon, Plus } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -14,8 +14,10 @@ export default function DashboardLayout() {
   const { user } = useAuth();
   const { hasActiveSubscription, hasActiveListingSubscription } = useSubscription();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   const unreadCount = MOCK_NOTIFICATIONS.filter((n) => !n.read).length;
+  const onListingPage = pathname === '/dashboard/listing';
 
   if (!user) {
     navigate('/');
@@ -71,7 +73,7 @@ export default function DashboardLayout() {
                 <Plus className="w-3.5 h-3.5" />
                 Post a Job
               </button>
-            ) : (
+            ) : !onListingPage && (
               <button
                 onClick={() => navigate('/dashboard/listing')}
                 className="hidden sm:flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-maroon to-gold text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity btn-press shadow-md shadow-maroon/20"
