@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { Elements } from '@stripe/react-stripe-js';
 import { getStripe } from '../config/stripe';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import StripePaymentForm from './StripePaymentForm';
 import { categoryLabels } from '../data/mockData';
 import { useTheme } from '../context/ThemeContext';
@@ -32,6 +32,24 @@ const ALL_CITIES = [
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const EXPERIENCE_YEARS = ['Less than 1 year', '1 year', '2 years', '3 years', '4 years', '5 years', '6 years', '7 years', '8 years', '9 years', '10+ years'];
+
+// Map PostAdModal short day names → full names used in CaregiverListing weeklySchedule
+const DAY_FULL: Record<string, string> = {
+  Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday',
+  Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday',
+};
+
+// Convert a start–end time pair into Morning / Afternoon / Evening / Overnight slots
+function timeToSlots(start: string, end: string): string[] {
+  const startH = parseInt(start.split(':')[0], 10);
+  const endH   = parseInt(end.split(':')[0],   10);
+  const slots: string[] = [];
+  if (startH < 12)              slots.push('Morning');
+  if (endH   > 12)              slots.push('Afternoon');
+  if (endH   > 17)              slots.push('Evening');
+  if (endH   >= 21 || endH < 6) slots.push('Overnight');
+  return slots.length ? slots : ['Morning'];
+}
 
 const HIRING_PLANS = [
   { id: '1m', label: '1 Month', price: 19, duration: '30 days', popular: false },
@@ -252,6 +270,49 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
   const handleBack = () => { if (step > 1) setStep(step - 1); };
 
   const handlePaymentSuccess = (type: 'family' | 'seeker') => {
+    // ── Seeker: save collected ad data to caregiver_profiles ─────────────────
+    if (type === 'seeker' && user && isSupabaseConfigured) {
+      // Convert schedule (Mon/Tue + hours) → weeklySchedule (Monday/Tuesday + slots)
+      const weeklySchedule: Record<string, string[]> = {};
+      Object.entries(sScheduleDays).forEach(([short, val]) => {
+        if (val.active) weeklySchedule[DAY_FULL[short]] = timeToSlots(val.start, val.end);
+      });
+
+      // Format rate as range: "$18–$25/hr"
+      const rate = sSalaryMin && sSalaryMax
+        ? `$${sSalaryMin}–$${sSalaryMax}/hr`
+        : sSalaryMin ? `$${sSalaryMin}/hr`
+        : '';
+
+      // Auto-generate listing title
+      const categoryName = categoryLabels[sCategory as keyof typeof categoryLabels] ?? sCategory;
+      const expPart = sExperience && sExperience !== 'Less than 1 year'
+        ? `${sExperience} Experienced `
+        : 'Experienced ';
+      const listingTitle = `${expPart}${categoryName}${sSelectedLocation ? ` in ${sSelectedLocation}` : ''}`;
+
+      // Skills: add cuisines for cook category
+      const skills = sCategory === 'cook' && sCuisines.length > 0 ? sCuisines : [];
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      supabase.from('caregiver_profiles').upsert({
+        id:             user.id,
+        bio:            sBio,
+        experience:     sExperience,
+        location:       sSelectedLocation,
+        rate,
+        languages:      sLanguages,
+        categories:     [sCategory],
+        skills,
+        weekly_schedule: weeklySchedule,
+        listing_title:  listingTitle,
+        listing_status: 'active',
+        updated_at:     new Date().toISOString(),
+      } as any).then(({ error }) => {
+        if (error) console.warn('Save caregiver listing error:', error.message);
+      });
+    }
+
     if (type === 'family') {
       setSubmitted(true);
       setTimeout(() => {

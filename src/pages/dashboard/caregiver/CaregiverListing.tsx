@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Eye, Mail, Edit2, Save, X, Pause, Play, FileText, Lock } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
+import { useAuth } from '../../../context/AuthContext';
 import { useSubscription } from '../../../context/SubscriptionContext';
+import { supabase, isSupabaseConfigured } from '../../../lib/supabase';
 import DashboardStatCard from '../../../components/dashboard/DashboardStatCard';
 import DashboardBadge from '../../../components/dashboard/DashboardBadge';
 import ListingSubscriptionModal from '../../../components/ListingSubscriptionModal';
@@ -40,6 +42,7 @@ function loadListingStatus(defaultStatus: 'active' | 'paused'): 'active' | 'paus
 
 export default function CaregiverListing() {
   const { isDark } = useTheme();
+  const { user } = useAuth();
   const { hasActiveListingSubscription, listingExpiryDate } = useSubscription();
   const { listing: savedListing, updateListing } = useCaregiverProfile();
   const [editing, setEditing] = useState(false);
@@ -48,6 +51,26 @@ export default function CaregiverListing() {
     status: loadListingStatus(savedListing.status), // localStorage takes precedence
   });
   const [showModal, setShowModal] = useState(false);
+
+  // ── Real counts from Supabase ─────────────────────────────────────────────
+  const [profileViews,    setProfileViews]    = useState(savedListing.views);
+  const [contactRequests, setContactRequests] = useState(savedListing.contactRequests);
+
+  useEffect(() => {
+    if (!user || !isSupabaseConfigured) return;
+
+    supabase
+      .from('profile_views')
+      .select('*', { count: 'exact', head: true })
+      .eq('caregiver_id', user.id)
+      .then(({ count }) => { if (count !== null) setProfileViews(count); });
+
+    supabase
+      .from('contact_requests')
+      .select('id', { count: 'exact', head: true })
+      .eq('to_id', user.id)
+      .then(({ count }) => { if (count !== null) setContactRequests(count); });
+  }, [user]);
 
   // Sync when async hook data arrives (only if not currently editing)
   useEffect(() => {
@@ -185,8 +208,8 @@ export default function CaregiverListing() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4">
-        <DashboardStatCard label="Profile Views" value={listing.views} icon={Eye} color="maroon" trend="this month" trendUp />
-        <DashboardStatCard label="Contact Requests" value={listing.contactRequests} icon={Mail} color="blue" />
+        <DashboardStatCard label="Profile Views"    value={profileViews}    icon={Eye}  color="maroon" trend="this month" trendUp />
+        <DashboardStatCard label="Contact Requests" value={contactRequests} icon={Mail} color="blue" />
       </div>
 
       {/* Status + Title */}
