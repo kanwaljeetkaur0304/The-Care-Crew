@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import {
-  X, Mail, Lock, Eye, EyeOff, Loader2, CheckCircle2, User, Phone,
-  MapPin, ShieldCheck,
+  X, Mail, Lock, Eye, EyeOff, Loader2, CheckCircle2, User, Phone, MapPin,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { supabase } from '../lib/supabase';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -14,13 +12,6 @@ interface AuthModalProps {
   defaultMode?: 'login' | 'register';
 }
 
-/** Normalise any phone number to E.164 (+1XXXXXXXXXX for North America) */
-function toE164(raw: string): string {
-  const digits = raw.replace(/\D/g, '');
-  if (digits.length === 10) return `+1${digits}`;
-  if (digits.length === 11 && digits[0] === '1') return `+${digits}`;
-  return `+${digits}`;
-}
 
 export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalProps) {
   const [mode, setMode] = useState<'login' | 'register'>(defaultMode);
@@ -42,76 +33,15 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
     role: 'family' as 'family' | 'caregiver',
   });
 
-  // ── Phone OTP state ────────────────────────────────────────────────────────
-  type PhoneStep = 'idle' | 'sending' | 'sent' | 'verifying' | 'verified';
-  const [phoneStep, setPhoneStep] = useState<PhoneStep>('idle');
-  const [otpCode, setOtpCode]     = useState('');
-  const [otpError, setOtpError]   = useState('');
-
-  const phoneDigits = form.phone.replace(/\D/g, '');
-  const phoneReady  = phoneDigits.length >= 10;
-
   if (!isOpen) return null;
 
   // ── Helpers ────────────────────────────────────────────────────────────────
-  const resetPhone = () => {
-    setPhoneStep('idle');
-    setOtpCode('');
-    setOtpError('');
-  };
-
   const switchMode = (m: 'login' | 'register') => {
     setMode(m);
     setError('');
     setSuccess(false);
     setEmailConfirmationSent(false);
-    resetPhone();
     setForm({ name: '', email: '', password: '', phone: '', location: '', role: 'family' });
-  };
-
-  const handleSendCode = async () => {
-    setPhoneStep('sending');
-    setOtpError('');
-    try {
-      const { error: otpErr } = await supabase.auth.signInWithOtp({
-        phone: toE164(form.phone),
-      });
-      if (otpErr) {
-        const msg = otpErr.message.toLowerCase();
-        setOtpError(
-          msg.includes('not enabled') || msg.includes('twilio') || msg.includes('phone provider')
-            ? 'SMS service is not yet configured. Your phone will be saved but unverified.'
-            : otpErr.message,
-        );
-        setPhoneStep('idle');
-      } else {
-        setPhoneStep('sent');
-      }
-    } catch {
-      setOtpError('Could not send code. Please try again.');
-      setPhoneStep('idle');
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    setPhoneStep('verifying');
-    setOtpError('');
-    try {
-      const { error: verifyErr } = await supabase.auth.verifyOtp({
-        phone: toE164(form.phone),
-        token: otpCode,
-        type: 'sms',
-      });
-      if (verifyErr) {
-        setOtpError('Incorrect code. Please try again.');
-        setPhoneStep('sent');
-      } else {
-        setPhoneStep('verified');
-      }
-    } catch {
-      setOtpError('Verification failed. Please try again.');
-      setPhoneStep('sent');
-    }
   };
 
   // ── Submit ─────────────────────────────────────────────────────────────────
@@ -270,81 +200,19 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
                       </div>
                     </div>
 
-                    {/* Phone Number + Send Code */}
+                    {/* Phone Number */}
                     <div>
                       <label className={labelClass}>Phone Number</label>
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <Phone className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
-                          <input
-                            type="tel"
-                            value={form.phone}
-                            onChange={(e) => { setForm({ ...form, phone: e.target.value }); resetPhone(); }}
-                            placeholder="+1 (555) 123-4567"
-                            disabled={phoneStep === 'verified'}
-                            className={`${inputClass} ${phoneStep === 'verified' ? 'pr-10' : ''}`}
-                          />
-                          {phoneStep === 'verified' && (
-                            <ShieldCheck className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
-                          )}
-                        </div>
-
-                        {/* Send Code button */}
-                        {phoneReady && phoneStep === 'idle' && (
-                          <button
-                            type="button"
-                            onClick={handleSendCode}
-                            className="shrink-0 px-3 py-2 text-xs font-semibold rounded-xl bg-gradient-to-r from-maroon to-gold text-white hover:opacity-90 transition-opacity"
-                          >
-                            Send Code
-                          </button>
-                        )}
-                        {phoneStep === 'sending' && (
-                          <span className={`shrink-0 flex items-center gap-1 px-3 text-xs ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Sending…
-                          </span>
-                        )}
-                        {phoneStep === 'verified' && (
-                          <span className="shrink-0 flex items-center gap-1 px-3 text-xs font-semibold text-emerald-600">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Verified
-                          </span>
-                        )}
+                      <div className="relative">
+                        <Phone className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+                        <input
+                          type="tel"
+                          value={form.phone}
+                          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                          placeholder="+1 (555) 123-4567"
+                          className={inputClass}
+                        />
                       </div>
-
-                      {/* OTP input */}
-                      {(phoneStep === 'sent' || phoneStep === 'verifying') && (
-                        <div className="mt-2 flex gap-2">
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            maxLength={6}
-                            value={otpCode}
-                            onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                            placeholder="6-digit code"
-                            className={`flex-1 px-3 py-2 text-sm border rounded-xl ${isDark ? 'bg-void border-void-border text-ink placeholder:text-ink-muted' : 'bg-light-bg border-light-border text-light-text placeholder:text-light-text-muted'}`}
-                          />
-                          <button
-                            type="button"
-                            onClick={handleVerifyOtp}
-                            disabled={otpCode.length < 6 || phoneStep === 'verifying'}
-                            className="shrink-0 px-3 py-2 text-xs font-semibold rounded-xl border border-emerald/40 text-emerald-600 bg-emerald/5 hover:bg-emerald/10 disabled:opacity-50 transition-colors"
-                          >
-                            {phoneStep === 'verifying' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Verify'}
-                          </button>
-                        </div>
-                      )}
-
-                      {/* OTP error / info */}
-                      {otpError && (
-                        <p className={`text-xs mt-1.5 ${otpError.includes('not yet') ? (isDark ? 'text-ink-muted' : 'text-light-text-muted') : 'text-red-500'}`}>
-                          {otpError}
-                        </p>
-                      )}
-                      {phoneStep === 'sent' && !otpError && (
-                        <p className={`text-xs mt-1.5 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
-                          Code sent to {form.phone}. Check your SMS.
-                        </p>
-                      )}
                     </div>
 
                     {/* Location */}
