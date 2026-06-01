@@ -178,7 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email,
           password,
           options: {
-            data: { full_name: name, role, phone },
+            data: { full_name: name, role, phone: phone ?? null, location: location ?? null },
           },
         });
 

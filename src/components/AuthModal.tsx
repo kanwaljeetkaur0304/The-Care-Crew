@@ -77,7 +77,6 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [emailConfirmationSent, setEmailConfirmationSent] = useState(false);
   const [countryCode, setCountryCode] = useState('+1');
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -146,7 +145,6 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
     setMode(m);
     setError('');
     setSuccess(false);
-    setEmailConfirmationSent(false);
     setForm({ name: '', email: '', password: '', phone: '', location: '', role: 'family' });
   };
 
@@ -166,16 +164,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
         form.location || undefined,
       );
       if (result.ok) {
-        setEmailConfirmationSent(Boolean(result.needsEmailConfirmation));
         setSuccess(true);
-        if (!result.needsEmailConfirmation) {
-          setTimeout(() => {
-            setSuccess(false);
-            setEmailConfirmationSent(false);
-            onClose();
-            navigate('/dashboard');
-          }, 900);
-        }
+        // No auto-redirect — user must sign in manually
       } else {
         setError(result.error ?? 'Registration failed. Please try again.');
       }
@@ -290,20 +280,34 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald to-teal flex items-center justify-center mx-auto mb-4">
                 <CheckCircle2 className="w-8 h-8 text-white" />
               </div>
-              <h4 className={`font-display text-2xl font-semibold mb-2 ${isDark ? 'text-ink' : 'text-light-text'}`}>
-                {emailConfirmationSent ? 'Check your email' : mode === 'login' ? 'Signed in!' : 'Account created!'}
-              </h4>
-              <p className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
-                {emailConfirmationSent ? 'We sent a confirmation link. Click it, then sign in.' : 'Redirecting you to your dashboard…'}
-              </p>
-              {emailConfirmationSent && (
-                <button
-                  type="button"
-                  onClick={() => { setSuccess(false); setEmailConfirmationSent(false); switchMode('login'); }}
-                  className="mt-6 text-sm font-medium text-gold hover:underline"
-                >
-                  Go to Sign In
-                </button>
+
+              {mode === 'login' ? (
+                /* Login success — auto-redirecting */
+                <>
+                  <h4 className={`font-display text-2xl font-semibold mb-2 ${isDark ? 'text-ink' : 'text-light-text'}`}>
+                    Signed in!
+                  </h4>
+                  <p className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
+                    Redirecting you to your dashboard…
+                  </p>
+                </>
+              ) : (
+                /* Registration success — show Sign In button */
+                <>
+                  <h4 className={`font-display text-2xl font-semibold mb-2 ${isDark ? 'text-ink' : 'text-light-text'}`}>
+                    Account Created! 🎉
+                  </h4>
+                  <p className={`text-sm mb-6 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
+                    Your account has been successfully created. Please sign in to access your dashboard.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => { setSuccess(false); switchMode('login'); }}
+                    className="w-full py-3 bg-gradient-to-r from-maroon to-gold text-white rounded-full text-sm font-semibold hover:opacity-90 transition-opacity btn-press shadow-md shadow-maroon/20"
+                  >
+                    Sign In to Your Account →
+                  </button>
+                </>
               )}
             </div>
           ) : (
