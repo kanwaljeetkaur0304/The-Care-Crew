@@ -31,11 +31,45 @@ export interface UseCaregiverProfileReturn {
 
 const DEMO_ID = 'demo-user';
 
+/** Blank profile seeded with real auth data — shown before DB row exists */
+function blankProfile(user: { name: string; email: string }): CaregiverProfile {
+  return {
+    ...MOCK_CAREGIVER_PROFILE,   // keeps field structure / defaults for extras
+    name: user.name,
+    email: user.email,
+    phone: '',
+    location: '',
+    bio: '',
+    experience: '',
+    rate: '',
+    languages: [],
+    categories: [],
+    certifications: [],
+    skills: [],
+    availability: [],
+    verifiedEmail: true,
+    verifiedPhone: false,
+    backgroundCheck: false,
+    memberSince: new Date().toISOString(),
+    photoUrl: undefined,
+  };
+}
+
 export function useCaregiverProfile(): UseCaregiverProfileReturn {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<CaregiverProfile>(MOCK_CAREGIVER_PROFILE);
+
+  // Demo → mock data.  Real user → start with their auth data (not Priya Sharma!)
+  const [profile, setProfile] = useState<CaregiverProfile>(() =>
+    user?.id === DEMO_ID ? MOCK_CAREGIVER_PROFILE : blankProfile(user ?? { name: '', email: '' })
+  );
   const [listing, setListing] = useState<CaregiverListing>(MOCK_CAREGIVER_LISTING);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Keep name/email in sync whenever auth user changes
+  useEffect(() => {
+    if (!user || user.id === DEMO_ID) return;
+    setProfile((prev) => ({ ...prev, name: user.name, email: user.email }));
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user || user.id === DEMO_ID || !isSupabaseConfigured) return;
@@ -49,7 +83,11 @@ export function useCaregiverProfile(): UseCaregiverProfileReturn {
       .maybeSingle()
       .then(({ data }) => {
         setIsLoading(false);
-        if (!data) return; // No row yet → keep mock defaults
+        if (!data) {
+          // No DB row yet — show real auth data with empty extras
+          setProfile(blankProfile(user));
+          return;
+        }
 
         const mappedProfile: CaregiverProfile = {
           name: user.name,

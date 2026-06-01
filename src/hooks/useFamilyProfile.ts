@@ -21,10 +21,37 @@ export interface UseFamilyProfileReturn {
 
 const DEMO_ID = 'demo-user';
 
+function blankFamilyProfile(user: { name: string; email: string }): FamilyProfile {
+  return {
+    ...MOCK_FAMILY_PROFILE,
+    name: user.name,
+    email: user.email,
+    phone: '',
+    location: '',
+    languages: [],
+    description: '',
+    lookingFor: [],
+    verifiedEmail: true,
+    verifiedPhone: false,
+    memberSince: new Date().toISOString(),
+    totalHires: 0,
+  };
+}
+
 export function useFamilyProfile(): UseFamilyProfileReturn {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<FamilyProfile>(MOCK_FAMILY_PROFILE);
+
+  // Demo → mock.  Real user → start with their real auth data
+  const [profile, setProfile] = useState<FamilyProfile>(() =>
+    user?.id === DEMO_ID ? MOCK_FAMILY_PROFILE : blankFamilyProfile(user ?? { name: '', email: '' })
+  );
   const [isLoading, setIsLoading] = useState(false);
+
+  // Keep name/email in sync whenever auth user changes
+  useEffect(() => {
+    if (!user || user.id === DEMO_ID) return;
+    setProfile((prev) => ({ ...prev, name: user.name, email: user.email }));
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user || user.id === DEMO_ID || !isSupabaseConfigured) return;
