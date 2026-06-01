@@ -39,6 +39,9 @@ const DAY_FULL: Record<string, string> = {
   Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday',
 };
 
+// Days a plan keeps a post/listing active
+const PLAN_DAYS: Record<string, number> = { '1m': 30, '2m': 60, '3m': 90 };
+
 // Convert a start–end time pair into Morning / Afternoon / Evening / Overnight slots
 function timeToSlots(start: string, end: string): string[] {
   const startH = parseInt(start.split(':')[0], 10);
@@ -310,6 +313,50 @@ export default function PostAdModal({ isOpen, onClose }: PostAdModalProps) {
         updated_at:     new Date().toISOString(),
       } as any).then(({ error }) => {
         if (error) console.warn('Save caregiver listing error:', error.message);
+      });
+    }
+
+    // ── Family: save job post to Supabase job_posts table ────────────────────
+    if (type === 'family' && user && isSupabaseConfigured) {
+      // Format salary range
+      const salary = hSalaryMin && hSalaryMax
+        ? `$${hSalaryMin}–$${hSalaryMax}/hr`
+        : hSalaryMin ? `$${hSalaryMin}/hr`
+        : '';
+
+      // Build schedule string from selected days + times
+      const scheduleStr = Object.entries(hScheduleDays)
+        .filter(([, v]) => v.active)
+        .map(([day, v]) => `${day} ${v.start}–${v.end}`)
+        .join(', ') || 'Flexible';
+
+      // Build requirements from language prefs + driver pref
+      const reqs: string[] = [];
+      if (hLanguages.length > 0) reqs.push(`${hLanguages.join(' / ')} speaker preferred`);
+      if (hNeedDriver === 'yes')        reqs.push("Valid driver's license required");
+      else if (hNeedDriver === 'adjustable') reqs.push("Driver's license an asset");
+
+      // Calculate expiry date from plan
+      const days = PLAN_DAYS[hSelectedPlan] ?? 30;
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + days);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      supabase.from('job_posts').insert({
+        family_id:    user.id,
+        family_name:  user.name,
+        title:        hTitle,
+        category:     hCategory,
+        location:     hSelectedLocation,
+        salary,
+        schedule:     scheduleStr,
+        description:  hDescription,
+        requirements: reqs,
+        languages:    hLanguages,
+        status:       'active',
+        expires_at:   expiresAt.toISOString(),
+      } as any).then(({ error }) => {
+        if (error) console.warn('Save family job post error:', error.message);
       });
     }
 

@@ -12,7 +12,7 @@
  *   10 pts  Availability     — compares schedule keywords with caregiver availability
  */
 
-import { jobListings } from '../data/mockData';
+import { jobListings, type JobListing } from '../data/mockData';
 import type { CaregiverProfile, CaregiverListing, JobMatch } from '../data/dashboardMockData';
 
 // ── Language keyword map (English omitted — assumed universal) ─────────────────
@@ -83,6 +83,7 @@ function relativeToISO(rel: string, referenceDate = '2026-05-24'): string {
 export function computeJobMatches(
   profile: CaregiverProfile,
   listing: CaregiverListing,
+  jobs?: JobListing[],          // real Supabase jobs; falls back to mock data if omitted
 ): JobMatch[] {
   // Merge profile + listing data so either source can fill gaps
   const caregiverCategories = [
@@ -97,9 +98,10 @@ export function computeJobMatches(
   const caregiverProvince = (listing.location.split(',')[1] ?? '').trim().toLowerCase();
   const caregiverRate     = parseHourlyRate(caregiverRateStr);
 
+  const pool = jobs ?? jobListings; // real jobs when available, mock as fallback
   const results: JobMatch[] = [];
 
-  for (const job of jobListings) {
+  for (const job of pool) {
     // ── 1. Category match (30 pts) — HARD FILTER ──────────────────────────────
     const jobLabel = CATEGORY_LABEL[job.category] ?? job.category;
     const categoryMatch = caregiverCategories.some(cat => {

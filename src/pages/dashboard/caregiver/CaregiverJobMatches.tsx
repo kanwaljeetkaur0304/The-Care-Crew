@@ -1,7 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Sparkles, MapPin, Calendar, BookmarkPlus, BookmarkCheck, ArrowRight, Filter } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
-import { MOCK_CAREGIVER_PROFILE, MOCK_CAREGIVER_LISTING, type JobMatch } from '../../../data/dashboardMockData';
+import { useAuth } from '../../../context/AuthContext';
+import { supabase, isSupabaseConfigured } from '../../../lib/supabase';
+import { useCaregiverProfile } from '../../../hooks/useCaregiverProfile';
+import { type JobMatch } from '../../../data/dashboardMockData';
+import { type JobListing } from '../../../data/mockData';
 import { computeJobMatches } from '../../../utils/jobMatchingAlgorithm';
 import DashboardEmptyState from '../../../components/dashboard/DashboardEmptyState';
 import ApplyModal from '../../../components/ApplyModal';
@@ -12,18 +16,76 @@ const scoreColor = (score: number) => {
   return 'text-blue-600 bg-blue-100 border-blue-200';
 };
 
+/** Map a Supabase job_posts row → JobListing shape the algorithm expects */
+function mapRow(row: Record<string, unknown>): JobListing {
+  return {
+    id:           String(row.id ?? ''),
+    title:        String(row.title ?? ''),
+    category:     (row.category as JobListing['category']) ?? 'nanny',
+    location:     String(row.location ?? ''),
+    salary:       String(row.salary ?? ''),
+    schedule:     String(row.schedule ?? ''),      // empty string if column absent — algorithm falls back to description
+    description:  String(row.description ?? ''),
+    requirements: (row.requirements as string[]) ?? [],
+    postedBy:     String(row.family_name ?? ''),
+    postedDate:   String(row.created_at ?? '').slice(0, 10),
+  };
+}
+
 export default function CaregiverJobMatches() {
   const { isDark } = useTheme();
-  // Lazy-initialise so the algorithm runs once and saved state persists within the session
-  const [matches, setMatches] = useState<JobMatch[]>(() =>
-    computeJobMatches(MOCK_CAREGIVER_PROFILE, MOCK_CAREGIVER_LISTING)
+  const { user } = useAuth();
+
+  // ── Real caregiver profile (fixes Problem 1) ───────────────────────────────
+  const { profile, listing } = useCaregiverProfile();
+
+  const [filter,    setFilter]    = useState<'all' | 'saved'>('all');
+  const [expanded,  setExpanded]  = useState<string | null>(null);
+  const [applyJob,  setApplyJob]  = useState<JobMatch | null>(null);
+  const [savedIds,  setSavedIds]  = useState<Set<string>>(new Set());
+
+  // ── Real jobs fetched from Supabase (fixes Problem 3) ────────────────────
+  // null  = not yet fetched (show mock while loading)
+  // []    = fetched but no active real jobs → fall back to mock
+  // [...] = real jobs → use these for matching
+  const [realJobs, setRealJobs] = useState<JobListing[] | null>(null);
+
+  useEffect(() => {
+    if (!user || !isSupabaseConfigured) return;
+
+    supabase
+      .from('job_posts')
+      .select('*')
+      .eq('status', 'active')
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setRealJobs(data.map(mapRow));
+        } else {
+          setRealJobs([]); // empty → useMemo will fall back to mock
+        }
+      });
+  }, [user]);
+
+  // ── Recompute matches whenever profile OR job pool changes ────────────────
+  const baseMatches = useMemo(() => {
+    // Use real jobs if we have them, otherwise pass undefined → mock fallback inside algorithm
+    const jobPool = realJobs !== null && realJobs.length > 0 ? realJobs : undefined;
+    return computeJobMatches(profile, listing, jobPool);
+  }, [profile, listing, realJobs]);
+
+  // Merge computed matches with saved state (savedIds is separate so useMemo stays pure)
+  const matches = useMemo(
+    () => baseMatches.map((m) => ({ ...m, saved: savedIds.has(m.id) })),
+    [baseMatches, savedIds],
   );
-  const [filter, setFilter] = useState<'all' | 'saved'>('all');
-  const [expanded, setExpanded] = useState<string | null>(null);
-  const [applyJob, setApplyJob] = useState<JobMatch | null>(null);
 
   const toggleSave = (id: string) => {
-    setMatches((prev) => prev.map((m) => m.id === id ? { ...m, saved: !m.saved } : m));
+    setSavedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
   const displayed = filter === 'saved' ? matches.filter((m) => m.saved) : matches;
