@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, Bell, Sun, Moon, Plus } from 'lucide-react';
+import { Menu, Bell, Sun, Moon, Plus, Home } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { useSubscription } from '../../context/SubscriptionContext';
@@ -63,6 +63,19 @@ export default function DashboardLayout() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Home button */}
+            <button
+              onClick={() => navigate('/')}
+              title="Go to homepage"
+              className={`p-2 rounded-full border transition-all ${
+                isDark
+                  ? 'border-void-border text-ink-light hover:bg-void-lighter hover:text-ink'
+                  : 'border-light-border text-light-text-2 hover:bg-light-surface-2 hover:text-light-text'
+              }`}
+            >
+              <Home className="w-4 h-4" />
+            </button>
+
             {/* Post an Ad / Update Listing CTA */}
             {user.role === 'family' ? (
               <button
