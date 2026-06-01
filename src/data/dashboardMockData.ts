@@ -529,7 +529,7 @@ export const MOCK_CAREGIVER_LISTING: CaregiverListing = {
   title: 'Experienced Nanny & Elder Care Specialist',
   category: 'Nanny',
   location: 'Brampton, ON',
-  rate: '$18/hr',
+  rate: '$18–$25/hr',
   availability: ['full-time', 'part-time'],
   weeklySchedule: {
     Monday:    ['Morning', 'Afternoon'],

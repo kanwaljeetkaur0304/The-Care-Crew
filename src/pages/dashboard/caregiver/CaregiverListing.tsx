@@ -40,6 +40,13 @@ function loadListingStatus(defaultStatus: 'active' | 'paused'): 'active' | 'paus
   return defaultStatus;
 }
 
+/** Extract numeric min/max from a rate string like "$18–$25/hr" or "$18/hr" */
+function parseRate(rate: string): { min: string; max: string } {
+  const m = rate.match(/\$?(\d+(?:\.\d+)?)(?:[–\-]\$?(\d+(?:\.\d+)?))?/);
+  if (!m) return { min: '', max: '' };
+  return { min: m[1] ?? '', max: m[2] ?? '' };
+}
+
 export default function CaregiverListing() {
   const { isDark } = useTheme();
   const { user } = useAuth();
@@ -51,6 +58,19 @@ export default function CaregiverListing() {
     status: loadListingStatus(savedListing.status), // localStorage takes precedence
   });
   const [showModal, setShowModal] = useState(false);
+
+  // ── Rate range inputs (min / max) ─────────────────────────────────────────
+  const [rateMin, setRateMin] = useState(() => parseRate(savedListing.rate).min);
+  const [rateMax, setRateMax] = useState(() => parseRate(savedListing.rate).max);
+
+  // Keep rate inputs in sync when savedListing loads from Supabase
+  useEffect(() => {
+    if (!editing) {
+      const { min, max } = parseRate(savedListing.rate);
+      setRateMin(min);
+      setRateMax(max);
+    }
+  }, [savedListing.rate, editing]);
 
   // ── Real counts from Supabase ─────────────────────────────────────────────
   const [profileViews,    setProfileViews]    = useState(savedListing.views);
@@ -232,11 +252,44 @@ export default function CaregiverListing() {
           )}
         </div>
         <div className="grid grid-cols-2 gap-4">
+          {/* Rate — special min/max range inputs in edit mode */}
+          <div>
+            <div className={`text-xs mb-1.5 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>Rate</div>
+            {editing ? (
+              <div className="flex items-center gap-1.5">
+                <div className="relative flex-1">
+                  <span className={`absolute left-2 top-1/2 -translate-y-1/2 text-xs font-medium ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>$</span>
+                  <input
+                    type="number" min="0"
+                    value={rateMin}
+                    onChange={(e) => setRateMin(e.target.value)}
+                    placeholder="Min"
+                    className={`w-full text-sm pl-5 pr-2 py-1.5 rounded-lg border outline-none ${isDark ? 'bg-void border-void-border text-ink' : 'bg-light-bg border-light-border text-light-text'}`}
+                  />
+                </div>
+                <span className={`text-xs shrink-0 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>–</span>
+                <div className="relative flex-1">
+                  <span className={`absolute left-2 top-1/2 -translate-y-1/2 text-xs font-medium ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>$</span>
+                  <input
+                    type="number" min="0"
+                    value={rateMax}
+                    onChange={(e) => setRateMax(e.target.value)}
+                    placeholder="Max"
+                    className={`w-full text-sm pl-5 pr-2 py-1.5 rounded-lg border outline-none ${isDark ? 'bg-void border-void-border text-ink' : 'bg-light-bg border-light-border text-light-text'}`}
+                  />
+                </div>
+                <span className={`text-xs shrink-0 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>/hr</span>
+              </div>
+            ) : (
+              <div className={`text-sm ${isDark ? 'text-ink' : 'text-light-text'}`}>{listing.rate}</div>
+            )}
+          </div>
+
+          {/* Experience, Location, Category — generic text inputs */}
           {[
-            { label: 'Rate', field: 'rate' as const },
             { label: 'Experience', field: 'experience' as const },
-            { label: 'Location', field: 'location' as const },
-            { label: 'Category', field: 'category' as const },
+            { label: 'Location',   field: 'location'   as const },
+            { label: 'Category',   field: 'category'   as const },
           ].map(({ label, field }) => (
             <div key={field}>
               <div className={`text-xs mb-1.5 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>{label}</div>
@@ -389,7 +442,13 @@ export default function CaregiverListing() {
       {editing && (
         <button
           onClick={async () => {
-            await updateListing(listing);
+            // Build rate string from min/max inputs
+            const rateStr = rateMin && rateMax
+              ? `$${rateMin}–$${rateMax}/hr`
+              : rateMin ? `$${rateMin}/hr`
+              : listing.rate;
+            await updateListing({ ...listing, rate: rateStr });
+            setListing((p) => ({ ...p, rate: rateStr }));
             setEditing(false);
           }}
           className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-maroon to-gold text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity btn-press shadow-md shadow-maroon/20"
