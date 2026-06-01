@@ -12,6 +12,49 @@ interface AuthModalProps {
   defaultMode?: 'login' | 'register';
 }
 
+// Cities with strong South Asian communities across Canada & USA
+const CITIES = [
+  // Ontario
+  'Brampton, ON','Mississauga, ON','Toronto, ON','Markham, ON','Scarborough, ON',
+  'Richmond Hill, ON','Vaughan, ON','Ajax, ON','Pickering, ON','Oakville, ON',
+  'Burlington, ON','Hamilton, ON','Kitchener, ON','Waterloo, ON','London, ON',
+  'Windsor, ON','Ottawa, ON','Oshawa, ON','Whitby, ON','Milton, ON',
+  // BC
+  'Surrey, BC','Vancouver, BC','Burnaby, BC','Richmond, BC','Abbotsford, BC',
+  'Langley, BC','Coquitlam, BC','Victoria, BC',
+  // Alberta
+  'Calgary, AB','Edmonton, AB','Red Deer, AB','Lethbridge, AB',
+  // Other Canada
+  'Winnipeg, MB','Saskatoon, SK','Regina, SK','Halifax, NS',
+  'Montreal, QC','Laval, QC','Quebec City, QC',
+  // New York / New Jersey
+  'New York, NY','Brooklyn, NY','Queens, NY','Jersey City, NJ',
+  'Newark, NJ','Edison, NJ','Iselin, NJ','Woodbridge, NJ','Parsippany, NJ',
+  // California
+  'Fremont, CA','San Jose, CA','Sunnyvale, CA','Santa Clara, CA','Cupertino, CA',
+  'Milpitas, CA','Oakland, CA','San Francisco, CA','Los Angeles, CA',
+  'San Diego, CA','Sacramento, CA','Irvine, CA','Anaheim, CA','Fresno, CA',
+  // Texas
+  'Houston, TX','Dallas, TX','Plano, TX','Frisco, TX','Irving, TX',
+  'Garland, TX','Arlington, TX','Austin, TX','San Antonio, TX',
+  // Illinois
+  'Chicago, IL','Naperville, IL','Schaumburg, IL','Lisle, IL',
+  // Washington
+  'Seattle, WA','Bellevue, WA','Redmond, WA','Kirkland, WA',
+  // Other USA
+  'Atlanta, GA','Charlotte, NC','Raleigh, NC','Durham, NC',
+  'Phoenix, AZ','Scottsdale, AZ','Tempe, AZ',
+  'Boston, MA','Cambridge, MA',
+  'Philadelphia, PA','Pittsburgh, PA',
+  'Detroit, MI','Ann Arbor, MI',
+  'Minneapolis, MN','Denver, CO',
+  'Las Vegas, NV','Henderson, NV',
+  'Miami, FL','Orlando, FL','Tampa, FL',
+  'Washington, DC','Baltimore, MD','Silver Spring, MD',
+  'Columbus, OH','Cleveland, OH','Cincinnati, OH',
+  'Indianapolis, IN','Nashville, TN','Memphis, TN',
+  'Portland, OR','Salt Lake City, UT',
+];
 
 export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalProps) {
   const [mode, setMode] = useState<'login' | 'register'>(defaultMode);
@@ -19,6 +62,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [emailConfirmationSent, setEmailConfirmationSent] = useState(false);
+  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const { isDark } = useTheme();
 
   const { login, register, isLoading } = useAuth();
@@ -34,6 +79,24 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
   });
 
   if (!isOpen) return null;
+
+  // ── Location autocomplete ──────────────────────────────────────────────────
+  const handleLocationChange = (value: string) => {
+    setForm((f) => ({ ...f, location: value }));
+    if (value.length >= 2) {
+      const q = value.toLowerCase();
+      const matches = CITIES.filter((c) => c.toLowerCase().includes(q)).slice(0, 6);
+      setLocationSuggestions(matches);
+      setShowSuggestions(matches.length > 0);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  const selectLocation = (city: string) => {
+    setForm((f) => ({ ...f, location: city }));
+    setShowSuggestions(false);
+  };
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   const switchMode = (m: 'login' | 'register') => {
@@ -219,14 +282,34 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
                     <div>
                       <label className={labelClass}>Location</label>
                       <div className="relative">
-                        <MapPin className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+                        <MapPin className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
                         <input
                           type="text"
                           value={form.location}
-                          onChange={(e) => setForm({ ...form, location: e.target.value })}
+                          onChange={(e) => handleLocationChange(e.target.value)}
+                          onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                          onFocus={() => form.location.length >= 2 && setShowSuggestions(locationSuggestions.length > 0)}
                           placeholder="e.g. Brampton, ON"
                           className={inputClass}
+                          autoComplete="off"
                         />
+                        {/* Suggestions dropdown */}
+                        {showSuggestions && (
+                          <ul className={`absolute z-50 left-0 right-0 top-full mt-1 rounded-xl border shadow-lg overflow-hidden ${isDark ? 'bg-void-light border-void-border' : 'bg-white border-light-border'}`}>
+                            {locationSuggestions.map((city) => (
+                              <li key={city}>
+                                <button
+                                  type="button"
+                                  onMouseDown={() => selectLocation(city)}
+                                  className={`w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm transition-colors ${isDark ? 'text-ink-light hover:bg-void-lighter' : 'text-light-text-2 hover:bg-light-surface-2'}`}
+                                >
+                                  <MapPin className="w-3.5 h-3.5 shrink-0 opacity-50" />
+                                  {city}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </div>
                     </div>
 
