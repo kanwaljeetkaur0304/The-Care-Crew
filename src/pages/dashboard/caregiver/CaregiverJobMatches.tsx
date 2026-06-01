@@ -24,11 +24,14 @@ function mapRow(row: Record<string, unknown>): JobListing {
     category:     (row.category as JobListing['category']) ?? 'nanny',
     location:     String(row.location ?? ''),
     salary:       String(row.salary ?? ''),
-    schedule:     String(row.schedule ?? ''),      // empty string if column absent — algorithm falls back to description
+    schedule:     String(row.schedule ?? ''),
     description:  String(row.description ?? ''),
     requirements: (row.requirements as string[]) ?? [],
     postedBy:     String(row.family_name ?? ''),
     postedDate:   String(row.created_at ?? '').slice(0, 10),
+    type:         'family',
+    contactEmail: String(row.contact_email ?? ''),
+    contactPhone: String(row.contact_phone ?? ''),
   };
 }
 
