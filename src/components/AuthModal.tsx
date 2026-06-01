@@ -12,6 +12,21 @@ interface AuthModalProps {
   defaultMode?: 'login' | 'register';
 }
 
+const COUNTRY_CODES = [
+  { flag: '🇨🇦', code: '+1',   label: 'Canada'      },
+  { flag: '🇺🇸', code: '+1',   label: 'USA'         },
+  { flag: '🇮🇳', code: '+91',  label: 'India'       },
+  { flag: '🇵🇰', code: '+92',  label: 'Pakistan'    },
+  { flag: '🇧🇩', code: '+880', label: 'Bangladesh'  },
+  { flag: '🇱🇰', code: '+94',  label: 'Sri Lanka'   },
+  { flag: '🇳🇵', code: '+977', label: 'Nepal'       },
+  { flag: '🇬🇧', code: '+44',  label: 'UK'          },
+  { flag: '🇦🇺', code: '+61',  label: 'Australia'   },
+  { flag: '🇳🇿', code: '+64',  label: 'New Zealand' },
+  { flag: '🇦🇪', code: '+971', label: 'UAE'         },
+  { flag: '🇸🇬', code: '+65',  label: 'Singapore'   },
+];
+
 // Cities with strong South Asian communities across Canada & USA
 const CITIES = [
   // Ontario
@@ -62,6 +77,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [emailConfirmationSent, setEmailConfirmationSent] = useState(false);
+  const [countryCode, setCountryCode] = useState('+1');
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const { isDark } = useTheme();
@@ -119,7 +135,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
       }
       const result = await register(
         form.name, form.email, form.password, form.role,
-        form.phone || undefined,
+        form.phone ? `${countryCode}${form.phone.replace(/^\+?\d*\s/, '')}` : undefined,
         form.location || undefined,
       );
       if (result.ok) {
@@ -266,15 +282,34 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
                     {/* Phone Number */}
                     <div>
                       <label className={labelClass}>Phone Number</label>
-                      <div className="relative">
-                        <Phone className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
-                        <input
-                          type="tel"
-                          value={form.phone}
-                          onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                          placeholder="+1 (555) 123-4567"
-                          className={inputClass}
-                        />
+                      <div className="flex gap-2">
+                        {/* Country code selector */}
+                        <select
+                          value={countryCode}
+                          onChange={(e) => setCountryCode(e.target.value)}
+                          className={`shrink-0 px-3 py-2 rounded-xl border text-sm font-medium outline-none cursor-pointer appearance-none text-center ${
+                            isDark
+                              ? 'bg-void border-void-border text-ink focus:border-gold/60'
+                              : 'bg-light-bg border-light-border text-light-text focus:border-maroon/40'
+                          }`}
+                        >
+                          {COUNTRY_CODES.map(({ flag, code, label }) => (
+                            <option key={label} value={code}>
+                              {flag} {code} ({label})
+                            </option>
+                          ))}
+                        </select>
+                        {/* Number input */}
+                        <div className="relative flex-1">
+                          <Phone className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+                          <input
+                            type="tel"
+                            value={form.phone}
+                            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                            placeholder="9024892122"
+                            className={inputClass}
+                          />
+                        </div>
                       </div>
                     </div>
 
