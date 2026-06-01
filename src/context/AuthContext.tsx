@@ -121,7 +121,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      // Race: auth call vs 15-second timeout — prevents infinite spinner
+      const authPromise = supabase.auth.signInWithPassword({ email, password });
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 15_000)
+      );
+
+      const { data, error } = await Promise.race([authPromise, timeoutPromise]);
 
       if (error) {
         return { ok: false, error: mapAuthError(error.message) };
@@ -139,10 +145,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return { ok: true };
     } catch (err) {
+      const isTimeout = err instanceof Error && err.message === 'timeout';
       console.error('Login error:', err);
-      return { ok: false, error: 'Sign in failed. Please try again.' };
+      return {
+        ok: false,
+        error: isTimeout
+          ? 'Sign in is taking too long — check your connection and try again.'
+          : 'Sign in failed. Please try again.',
+      };
     } finally {
-      // Always reset loading — even if signInWithPassword throws
+      // Always reset loading — prevents infinite spinner no matter what
       setIsLoading(false);
     }
   }, []);

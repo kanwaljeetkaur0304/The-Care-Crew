@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import {
-  X, Mail, Lock, Eye, EyeOff, Loader2, CheckCircle2, User, Phone, MapPin,
+  X, Mail, Lock, Eye, EyeOff, Loader2, CheckCircle2, User, Phone, MapPin, ArrowLeft,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -93,6 +94,32 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
     location: '',
     role: 'family' as 'family' | 'caregiver',
   });
+
+  // ── Forgot password ────────────────────────────────────────────────────────
+  const [forgotMode, setForgotMode] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState('');
+
+  const handleResetPassword = async () => {
+    if (!resetEmail) return;
+    setResetLoading(true);
+    setResetError('');
+    try {
+      if (isSupabaseConfigured) {
+        const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) { setResetError(error.message); return; }
+      }
+      setResetSent(true);
+    } catch {
+      setResetError('Could not send reset email. Please try again.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -205,7 +232,59 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
         </div>
 
         <div className="p-6">
-          {success ? (
+          {forgotMode ? (
+            /* ── Forgot password screen ── */
+            <div>
+              <button
+                onClick={() => { setForgotMode(false); setResetSent(false); setResetError(''); }}
+                className={`flex items-center gap-1.5 text-xs font-medium mb-5 ${isDark ? 'text-ink-muted hover:text-ink' : 'text-light-text-muted hover:text-light-text'}`}
+              >
+                <ArrowLeft className="w-3.5 h-3.5" /> Back to Sign In
+              </button>
+              {resetSent ? (
+                <div className="text-center py-6">
+                  <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle2 className="w-7 h-7 text-emerald-600" />
+                  </div>
+                  <h4 className={`font-display text-lg font-semibold mb-2 ${isDark ? 'text-ink' : 'text-light-text'}`}>Check your inbox</h4>
+                  <p className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
+                    We sent a password reset link to <strong>{resetEmail}</strong>. Click it to set a new password.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <h4 className={`font-display text-lg font-semibold mb-1 ${isDark ? 'text-ink' : 'text-light-text'}`}>Reset your password</h4>
+                    <p className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
+                      Enter your email and we will send you a reset link.
+                    </p>
+                  </div>
+                  <div>
+                    <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-ink' : 'text-light-text'}`}>Email</label>
+                    <div className="relative">
+                      <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+                      <input
+                        type="email"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm ${isDark ? 'bg-void border-void-border text-ink placeholder:text-ink-muted' : 'bg-light-bg border-light-border text-light-text placeholder:text-light-text-muted'}`}
+                      />
+                    </div>
+                  </div>
+                  {resetError && <p className="text-xs text-red-500">{resetError}</p>}
+                  <button
+                    onClick={handleResetPassword}
+                    disabled={!resetEmail || resetLoading}
+                    className="w-full py-3 bg-gradient-to-r from-maroon to-gold text-white rounded-full text-sm font-semibold hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2"
+                  >
+                    {resetLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                    Send Reset Link
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : success ? (
             /* ── Success screen ── */
             <div className="text-center py-10">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald to-teal flex items-center justify-center mx-auto mb-4">
@@ -412,7 +491,20 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
                 </button>
               </form>
 
-              <p className={`text-center text-xs mt-6 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
+              {/* Forgot password link — only on login tab */}
+              {mode === 'login' && (
+                <p className={`text-center text-xs mt-2 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
+                  <button
+                    type="button"
+                    onClick={() => { setForgotMode(true); setResetEmail(form.email); setResetSent(false); setResetError(''); }}
+                    className={`hover:underline ${isDark ? 'text-ink-muted hover:text-gold' : 'text-light-text-muted hover:text-maroon'}`}
+                  >
+                    Forgot your password?
+                  </button>
+                </p>
+              )}
+
+              <p className={`text-center text-xs mt-4 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
                 {mode === 'login' ? (
                   <>Don&apos;t have an account?{' '}
                     <button onClick={() => switchMode('register')} className="text-gold font-medium hover:underline">Register</button>
