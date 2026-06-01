@@ -2,20 +2,16 @@
  * useCaregiverProfile
  *
  * Returns the logged-in caregiver's profile + listing data.
- * - Demo user (id === 'demo-user') → returns MOCK data instantly, no Supabase calls.
- * - Real user → fetches from `caregiver_profiles` table. If no row exists yet
- *   (new account), returns mock defaults so the UI is never empty.
+ * Fetches from `caregiver_profiles` table. If no row exists yet
+ * (new account), returns blank defaults so the UI is never empty.
  *
- * updateProfile / updateListing save changes locally and persist to Supabase for
- * real users. Demo-user updates are local-only.
+ * updateProfile / updateListing save changes locally and persist to Supabase.
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import {
-  MOCK_CAREGIVER_PROFILE,
-  MOCK_CAREGIVER_LISTING,
   type CaregiverProfile,
   type CaregiverListing,
   type AvailabilityType,
@@ -29,12 +25,8 @@ export interface UseCaregiverProfileReturn {
   updateListing: (updates: Partial<CaregiverListing>) => Promise<void>;
 }
 
-const DEMO_ID = 'demo-user';
-
-/** Blank profile seeded with real auth data — shown before DB row exists */
 function blankProfile(user: { name: string; email: string }): CaregiverProfile {
   return {
-    ...MOCK_CAREGIVER_PROFILE,   // keeps field structure / defaults for extras
     name: user.name,
     email: user.email,
     phone: '',
@@ -55,24 +47,43 @@ function blankProfile(user: { name: string; email: string }): CaregiverProfile {
   };
 }
 
+function blankListing(): CaregiverListing {
+  return {
+    title: '',
+    category: '',
+    location: '',
+    rate: '',
+    availability: [],
+    weeklySchedule: {},
+    experience: '',
+    bio: '',
+    languages: [],
+    skills: [],
+    certifications: [],
+    status: 'active',
+    views: 0,
+    contactRequests: 0,
+    createdDate: new Date().toISOString(),
+  };
+}
+
 export function useCaregiverProfile(): UseCaregiverProfileReturn {
   const { user } = useAuth();
 
-  // Demo → mock data.  Real user → start with their auth data (not Priya Sharma!)
   const [profile, setProfile] = useState<CaregiverProfile>(() =>
-    user?.id === DEMO_ID ? MOCK_CAREGIVER_PROFILE : blankProfile(user ?? { name: '', email: '' })
+    blankProfile(user ?? { name: '', email: '' })
   );
-  const [listing, setListing] = useState<CaregiverListing>(MOCK_CAREGIVER_LISTING);
+  const [listing,   setListing]   = useState<CaregiverListing>(blankListing());
   const [isLoading, setIsLoading] = useState(false);
 
   // Keep name/email in sync whenever auth user changes
   useEffect(() => {
-    if (!user || user.id === DEMO_ID) return;
+    if (!user) return;
     setProfile((prev) => ({ ...prev, name: user.name, email: user.email }));
   }, [user?.id]);
 
   useEffect(() => {
-    if (!user || user.id === DEMO_ID || !isSupabaseConfigured) return;
+    if (!user || !isSupabaseConfigured) return;
 
     setIsLoading(true);
 
@@ -84,12 +95,11 @@ export function useCaregiverProfile(): UseCaregiverProfileReturn {
       .then(({ data }) => {
         setIsLoading(false);
         if (!data) {
-          // No DB row yet — show real auth data with empty extras
           setProfile(blankProfile(user));
           return;
         }
 
-        const mappedProfile: CaregiverProfile = {
+        setProfile({
           name: user.name,
           email: user.email,
           phone: data.phone ?? '',
@@ -102,14 +112,14 @@ export function useCaregiverProfile(): UseCaregiverProfileReturn {
           certifications: data.certifications ?? [],
           skills: data.skills ?? [],
           availability: (data.availability ?? []) as AvailabilityType[],
-          verifiedEmail: true, // They are signed in → email verified
+          verifiedEmail: true,
           verifiedPhone: false,
           backgroundCheck: data.background_check ?? false,
           memberSince: data.created_at,
           photoUrl: data.photo_url ?? undefined,
-        };
+        });
 
-        const mappedListing: CaregiverListing = {
+        setListing({
           title: data.listing_title ?? '',
           category: (data.categories ?? [])[0] ?? '',
           location: data.location ?? '',
@@ -122,24 +132,19 @@ export function useCaregiverProfile(): UseCaregiverProfileReturn {
           skills: data.skills ?? [],
           certifications: data.certifications ?? [],
           status: (data.listing_status as 'active' | 'paused') ?? 'active',
-          views: 0,         // fetched separately via profile_views in CaregiverOverview
-          contactRequests: 0, // fetched separately via contact_requests
+          views: 0,
+          contactRequests: 0,
           createdDate: data.created_at,
-        };
-
-        setProfile(mappedProfile);
-        setListing(mappedListing);
+        });
       });
   }, [user]);
 
   const updateProfile = useCallback(
     async (updates: Partial<CaregiverProfile>) => {
-      // Optimistically update local state
       setProfile((prev) => ({ ...prev, ...updates }));
 
-      if (!user || user.id === DEMO_ID || !isSupabaseConfigured) return;
+      if (!user || !isSupabaseConfigured) return;
 
-      // Map camelCase fields → snake_case DB columns
       const row: Record<string, unknown> = { id: user.id, updated_at: new Date().toISOString() };
       if (updates.phone !== undefined)          row.phone = updates.phone;
       if (updates.location !== undefined)       row.location = updates.location;
@@ -164,7 +169,7 @@ export function useCaregiverProfile(): UseCaregiverProfileReturn {
     async (updates: Partial<CaregiverListing>) => {
       setListing((prev) => ({ ...prev, ...updates }));
 
-      if (!user || user.id === DEMO_ID || !isSupabaseConfigured) return;
+      if (!user || !isSupabaseConfigured) return;
 
       const row: Record<string, unknown> = { id: user.id, updated_at: new Date().toISOString() };
       if (updates.title !== undefined)          row.listing_title = updates.title;

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Heart, MapPin, Clock, Star, ArrowRight, Trash2 } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
-import { MOCK_SAVED_CAREGIVERS, type SavedCaregiver } from '../../../data/dashboardMockData';
+import { type SavedCaregiver } from '../../../data/dashboardMockData';
 import DashboardEmptyState from '../../../components/dashboard/DashboardEmptyState';
 
 const availabilityColor = (status: string) => {
@@ -12,7 +12,7 @@ const availabilityColor = (status: string) => {
 
 export default function FamilySavedCaregivers() {
   const { isDark } = useTheme();
-  const [saved, setSaved] = useState<SavedCaregiver[]>(MOCK_SAVED_CAREGIVERS);
+  const [saved, setSaved] = useState<SavedCaregiver[]>([]);
 
   const removeSaved = (id: string) => {
     setSaved((prev) => prev.filter((c) => c.id !== id));

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Mail, MapPin, Check, X, MessageSquare } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
-import { MOCK_CAREGIVER_CONTACT_REQUESTS, type ContactRequest } from '../../../data/dashboardMockData';
+import { type ContactRequest } from '../../../data/dashboardMockData';
 import { useContactRequests } from '../../../context/ContactRequestContext';
 import DashboardEmptyState from '../../../components/dashboard/DashboardEmptyState';
 import DashboardBadge from '../../../components/dashboard/DashboardBadge';
@@ -9,7 +9,7 @@ import DashboardBadge from '../../../components/dashboard/DashboardBadge';
 export default function CaregiverContactRequests() {
   const { isDark } = useTheme();
   const { caregiverInbox, updateStatus: contextUpdateStatus } = useContactRequests();
-  const [mockRequests, setMockRequests] = useState<ContactRequest[]>(MOCK_CAREGIVER_CONTACT_REQUESTS);
+  const [mockRequests, setMockRequests] = useState<ContactRequest[]>([]);
   const [filter, setFilter] = useState<'all' | 'pending' | 'accepted' | 'declined'>('all');
 
   // Merge real requests (from families contacting this caregiver) with mock data

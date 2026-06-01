@@ -5,11 +5,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useMessages } from '../../../context/MessagesContext';
 import { useContactRequests } from '../../../context/ContactRequestContext';
 import DashboardStatCard from '../../../components/dashboard/DashboardStatCard';
-import {
-  MOCK_SAVED_CAREGIVERS,
-  MOCK_NOTIFICATIONS,
-  MOCK_SUBSCRIPTION,
-} from '../../../data/dashboardMockData';
+import { useSubscription, CONTACT_PLANS } from '../../../context/SubscriptionContext';
 import { useFamilyProfile } from '../../../hooks/useFamilyProfile';
 import { useJobPosts } from '../../../hooks/useJobPosts';
 
@@ -21,10 +17,16 @@ export default function FamilyOverview() {
   const { jobs } = useJobPosts();
   const { threads } = useMessages();
   const { familyInbox } = useContactRequests();
+  const { hasActiveSubscription, subscription, expiryDate } = useSubscription();
+
+  const currentPlan = subscription ? CONTACT_PLANS.find((p) => p.id === subscription.planId) : null;
+  const daysLeft = subscription
+    ? Math.max(0, Math.ceil((new Date(subscription.expiresAt).getTime() - Date.now()) / 86_400_000))
+    : 0;
 
   const activeJobs = jobs.filter((j) => j.status === 'active').length;
   const unreadMessages = threads.reduce((acc, t) => acc + t.unread, 0);
-  const unreadNotifications = MOCK_NOTIFICATIONS.filter((n) => !n.read).length;
+  const unreadNotifications = 0;
   const pendingRequests = familyInbox.filter((r) => r.status === 'pending').length;
 
   const quickActions = [
@@ -47,12 +49,12 @@ export default function FamilyOverview() {
       </div>
 
       {/* Subscription Banner */}
-      {MOCK_SUBSCRIPTION.status === 'active' && (
+      {hasActiveSubscription && currentPlan && (
         <div className="rounded-2xl bg-gradient-to-r from-maroon to-gold p-5 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="text-xs font-semibold uppercase tracking-wide opacity-80 mb-1">Active Plan</div>
-            <div className="font-display text-xl font-bold">{MOCK_SUBSCRIPTION.tier} Plan</div>
-            <div className="text-sm opacity-80">{MOCK_SUBSCRIPTION.daysLeft} days remaining · {MOCK_SUBSCRIPTION.contactsUnlocked} contacts unlocked</div>
+            <div className="font-display text-xl font-bold">{currentPlan.tier} Plan</div>
+            <div className="text-sm opacity-80">{daysLeft} days remaining · expires {expiryDate}</div>
           </div>
           <button
             onClick={() => navigate('/dashboard/subscription')}
@@ -66,7 +68,7 @@ export default function FamilyOverview() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <DashboardStatCard label="Active Job Posts" value={activeJobs} icon={Briefcase} trend="2 this month" trendUp color="maroon" />
-        <DashboardStatCard label="Saved Caregivers" value={MOCK_SAVED_CAREGIVERS.length} icon={Heart} color="purple" />
+        <DashboardStatCard label="Saved Caregivers" value={0} icon={Heart} color="purple" />
         <DashboardStatCard label="Pending Requests" value={pendingRequests} icon={Mail} color="blue" />
         <DashboardStatCard label="Unread Messages" value={unreadMessages} icon={MessageSquare} trend={`${unreadNotifications} alerts`} trendUp color="emerald" />
       </div>
@@ -161,16 +163,10 @@ export default function FamilyOverview() {
         <div className={`rounded-2xl border divide-y ${
           isDark ? 'bg-void-light border-void-border divide-void-border' : 'bg-white border-light-border divide-light-border'
         }`}>
-          {MOCK_NOTIFICATIONS.slice(0, 4).map((n) => (
-            <div key={n.id} className={`flex items-start gap-3 p-4 ${!n.read ? isDark ? 'bg-gold/5' : 'bg-maroon/5' : ''}`}>
-              <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${!n.read ? 'bg-maroon' : isDark ? 'bg-void-border' : 'bg-light-border'}`} />
-              <div className="flex-1 min-w-0">
-                <div className={`text-sm font-medium ${isDark ? 'text-ink' : 'text-light-text'}`}>{n.title}</div>
-                <div className={`text-xs mt-0.5 truncate ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>{n.body}</div>
-              </div>
-              <div className={`text-xs shrink-0 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>{n.time}</div>
-            </div>
-          ))}
+          <div className="py-8 text-center">
+            <Bell className={`w-8 h-8 mx-auto mb-2 ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`} />
+            <p className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>No recent activity yet.</p>
+          </div>
         </div>
       </div>
 

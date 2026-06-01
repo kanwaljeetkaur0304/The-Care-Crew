@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
-import { MOCK_MESSAGE_THREADS, type MessageThread, type ChatMessage } from '../data/dashboardMockData';
+import { type MessageThread, type ChatMessage } from '../data/dashboardMockData';
 
 interface MessagesContextType {
   threads: MessageThread[];
@@ -11,7 +11,7 @@ interface MessagesContextType {
 const MessagesContext = createContext<MessagesContextType | undefined>(undefined);
 
 export function MessagesProvider({ children }: { children: ReactNode }) {
-  const [threads, setThreads] = useState<MessageThread[]>(MOCK_MESSAGE_THREADS);
+  const [threads, setThreads] = useState<MessageThread[]>([]);
 
   const addThread = (thread: MessageThread) => {
     setThreads((prev) => {

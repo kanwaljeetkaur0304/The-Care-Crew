@@ -29,7 +29,6 @@ interface AuthContextType {
     location?: string
   ) => Promise<AuthResult>;
   logout: () => Promise<void>;
-  loginAsDemo: (role: UserRole) => void;
   isLoading: boolean;
   isConfigured: boolean;
 }
@@ -216,15 +215,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const loginAsDemo = useCallback((role: UserRole) => {
-    setUser({
-      id: 'demo-user',
-      name: role === 'caregiver' ? 'Priya Sharma' : 'Kanwal Kaur',
-      email: role === 'caregiver' ? 'priya@demo.com' : 'kanwal@demo.com',
-      role,
-    });
-  }, []);
-
   // Only mark as loading when actively doing a login/register operation,
   // NOT during the initial Supabase session bootstrap. This prevents the
   // dashboard from showing an infinite spinner while getSession is in-flight.
@@ -237,7 +227,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
-        loginAsDemo,
         isLoading: busy,
         isConfigured: isSupabaseConfigured,
       }}

@@ -4,7 +4,6 @@ import { Menu, Bell, Sun, Moon, Plus } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { MOCK_NOTIFICATIONS } from '../../data/dashboardMockData';
 import DashboardSidebar from './DashboardSidebar';
 import SubscriptionExpiredGate from './SubscriptionExpiredGate';
 
@@ -16,7 +15,7 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
-  const unreadCount = MOCK_NOTIFICATIONS.filter((n) => !n.read).length;
+  const unreadCount = 0; // will be replaced with real notification count once notification table is wired
   const onListingPage = pathname === '/dashboard/listing';
 
   if (!user) {

@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Star, MessageSquare, Send } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
-import { MOCK_REVIEWS, type Review } from '../../../data/dashboardMockData';
+import { type Review } from '../../../data/dashboardMockData';
 import DashboardEmptyState from '../../../components/dashboard/DashboardEmptyState';
 
 export default function CaregiverReviews() {
   const { isDark } = useTheme();
-  const [reviews, setReviews] = useState<Review[]>(MOCK_REVIEWS);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
 

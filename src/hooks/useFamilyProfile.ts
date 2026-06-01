@@ -2,16 +2,16 @@
  * useFamilyProfile
  *
  * Returns the logged-in family's profile data.
- * - Demo user → MOCK_FAMILY_PROFILE (no Supabase calls).
- * - Real user → fetches from `family_profiles` table.
+ * Fetches from `family_profiles` table. If no row exists yet, returns
+ * blank defaults seeded with real auth data.
  *
- * updateProfile saves changes locally + persists to Supabase for real users.
+ * updateProfile saves changes locally + persists to Supabase.
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { MOCK_FAMILY_PROFILE, type FamilyProfile } from '../data/dashboardMockData';
+import { type FamilyProfile } from '../data/dashboardMockData';
 
 export interface UseFamilyProfileReturn {
   profile: FamilyProfile;
@@ -19,11 +19,8 @@ export interface UseFamilyProfileReturn {
   updateProfile: (updates: Partial<FamilyProfile>) => Promise<void>;
 }
 
-const DEMO_ID = 'demo-user';
-
 function blankFamilyProfile(user: { name: string; email: string }): FamilyProfile {
   return {
-    ...MOCK_FAMILY_PROFILE,
     name: user.name,
     email: user.email,
     phone: '',
@@ -41,20 +38,19 @@ function blankFamilyProfile(user: { name: string; email: string }): FamilyProfil
 export function useFamilyProfile(): UseFamilyProfileReturn {
   const { user } = useAuth();
 
-  // Demo → mock.  Real user → start with their real auth data
   const [profile, setProfile] = useState<FamilyProfile>(() =>
-    user?.id === DEMO_ID ? MOCK_FAMILY_PROFILE : blankFamilyProfile(user ?? { name: '', email: '' })
+    blankFamilyProfile(user ?? { name: '', email: '' })
   );
   const [isLoading, setIsLoading] = useState(false);
 
   // Keep name/email in sync whenever auth user changes
   useEffect(() => {
-    if (!user || user.id === DEMO_ID) return;
+    if (!user) return;
     setProfile((prev) => ({ ...prev, name: user.name, email: user.email }));
   }, [user?.id]);
 
   useEffect(() => {
-    if (!user || user.id === DEMO_ID || !isSupabaseConfigured) return;
+    if (!user || !isSupabaseConfigured) return;
 
     setIsLoading(true);
 
@@ -67,20 +63,7 @@ export function useFamilyProfile(): UseFamilyProfileReturn {
         setIsLoading(false);
 
         if (!data) {
-          // No row yet — show real auth data with empty extras (not mock)
-          setProfile({
-            name: user.name,
-            email: user.email,
-            phone: '',
-            location: '',
-            languages: [],
-            description: '',
-            lookingFor: [],
-            verifiedEmail: true,
-            verifiedPhone: false,
-            memberSince: new Date().toISOString(),
-            totalHires: 0,
-          });
+          setProfile(blankFamilyProfile(user));
           return;
         }
 
@@ -104,7 +87,7 @@ export function useFamilyProfile(): UseFamilyProfileReturn {
     async (updates: Partial<FamilyProfile>) => {
       setProfile((prev) => ({ ...prev, ...updates }));
 
-      if (!user || user.id === DEMO_ID || !isSupabaseConfigured) return;
+      if (!user || !isSupabaseConfigured) return;
 
       const row: Record<string, unknown> = { id: user.id, updated_at: new Date().toISOString() };
       if (updates.phone !== undefined)       row.phone = updates.phone;

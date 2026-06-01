@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { Camera, Plus, Trash2, Video, Image, Edit2, Check, X, Loader2 } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
-import { MOCK_MEDIA, type MediaItem } from '../../../data/dashboardMockData';
+import { type MediaItem } from '../../../data/dashboardMockData';
 import DashboardEmptyState from '../../../components/dashboard/DashboardEmptyState';
 
 /** Capture first frame of a video file as a JPEG data URL */
@@ -27,7 +27,7 @@ const generateVideoThumbnail = (file: File): Promise<string> =>
 
 export default function CaregiverPhotos() {
   const { isDark } = useTheme();
-  const [media, setMedia] = useState<MediaItem[]>(MOCK_MEDIA);
+  const [media, setMedia] = useState<MediaItem[]>([]);
   const [editingCaption, setEditingCaption] = useState<string | null>(null);
   const [captionText, setCaptionText] = useState('');
   const [filter, setFilter] = useState<'all' | 'photo' | 'video'>('all');

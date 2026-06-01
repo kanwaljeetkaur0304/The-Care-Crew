@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import {
   X, Mail, Lock, Eye, EyeOff, Loader2, CheckCircle2, User, Phone,
-  Sparkles, MapPin, ShieldCheck,
+  MapPin, ShieldCheck,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { useSubscription } from '../context/SubscriptionContext';
 import { supabase } from '../lib/supabase';
 
 interface AuthModalProps {
@@ -31,8 +30,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
   const [emailConfirmationSent, setEmailConfirmationSent] = useState(false);
   const { isDark } = useTheme();
 
-  const { login, register, loginAsDemo, isLoading } = useAuth();
-  const { purchaseSubscription, purchaseListingSubscription } = useSubscription();
+  const { login, register, isLoading } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -222,41 +220,6 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
             </div>
           ) : (
             <>
-              {/* ── Demo access ── */}
-              <div className={`mb-5 p-4 rounded-2xl border ${isDark ? 'bg-gold/5 border-gold/20' : 'bg-amber-50 border-amber-200'}`}>
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="w-4 h-4 text-gold" />
-                  <span className={`text-xs font-semibold uppercase tracking-wide ${isDark ? 'text-gold' : 'text-amber-700'}`}>
-                    Try the Dashboard — No account needed
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {([
-                    { role: 'family', label: '👨‍👩‍👧 Family Dashboard' },
-                    { role: 'caregiver', label: '🧑‍🤝‍🧑 Caregiver Dashboard' },
-                  ] as const).map(({ role, label }) => (
-                    <button
-                      key={role}
-                      type="button"
-                      onClick={() => {
-                        loginAsDemo(role);
-                        purchaseSubscription('2m');
-                        purchaseListingSubscription('list-2m');
-                        onClose();
-                        navigate('/dashboard');
-                      }}
-                      className={`py-2.5 rounded-xl text-xs font-semibold border transition-all btn-press ${
-                        isDark
-                          ? 'bg-void-lighter border-void-border text-ink hover:border-gold/40 hover:text-gold'
-                          : 'bg-white border-amber-200 text-amber-800 hover:border-amber-400'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* ── Divider ── */}
               <div className="flex items-center gap-3 mb-5">
                 <div className={`flex-1 h-px ${isDark ? 'bg-void-border' : 'bg-light-border'}`} />

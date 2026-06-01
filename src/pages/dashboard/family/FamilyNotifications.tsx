@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Bell, MessageSquare, Mail, Sparkles, Star, Settings, Check } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
-import { MOCK_NOTIFICATIONS, type Notification } from '../../../data/dashboardMockData';
+import { type Notification } from '../../../data/dashboardMockData';
 
 const typeIcon: Record<string, React.ElementType> = {
   message: MessageSquare,
@@ -21,7 +21,7 @@ const typeColor: Record<string, string> = {
 
 export default function FamilyNotifications() {
   const { isDark } = useTheme();
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const markAllRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   const markRead = (id: string) => setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));

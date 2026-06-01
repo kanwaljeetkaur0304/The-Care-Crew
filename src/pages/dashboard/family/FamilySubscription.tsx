@@ -1,16 +1,20 @@
 import { useState } from 'react';
 import { CreditCard, Check, ShieldCheck, Calendar, Zap, ArrowRight } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
-import { MOCK_SUBSCRIPTION } from '../../../data/dashboardMockData';
-import { CONTACT_PLANS } from '../../../context/SubscriptionContext';
+import { useSubscription, CONTACT_PLANS } from '../../../context/SubscriptionContext';
 import SubscriptionModal from '../../../components/SubscriptionModal';
 
 export default function FamilySubscription() {
   const { isDark } = useTheme();
-  const sub = MOCK_SUBSCRIPTION;
+  const { hasActiveSubscription, subscription, expiryDate } = useSubscription();
   const [showModal, setShowModal] = useState(false);
 
-  const daysPercent = Math.round((sub.daysLeft / 60) * 100);
+  const currentPlan = subscription ? CONTACT_PLANS.find((p) => p.id === subscription.planId) : null;
+  const daysLeft = subscription
+    ? Math.max(0, Math.ceil((new Date(subscription.expiresAt).getTime() - Date.now()) / 86_400_000))
+    : 0;
+  const daysPercent = currentPlan ? Math.round((daysLeft / currentPlan.durationDays) * 100) : 0;
+  const features = currentPlan ? currentPlan.features.filter((f) => f.included).map((f) => f.name) : [];
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -24,13 +28,13 @@ export default function FamilySubscription() {
       </div>
 
       {/* Current Plan Card */}
-      {sub.status === 'active' ? (
+      {hasActiveSubscription && currentPlan ? (
         <div className="rounded-2xl bg-gradient-to-br from-maroon via-maroon to-gold p-6 text-white">
           <div className="flex items-start justify-between mb-5">
             <div>
               <div className="text-xs font-semibold uppercase tracking-wide opacity-75 mb-1">Current Plan</div>
-              <div className="font-display text-2xl font-bold">{sub.tier} Plan</div>
-              <div className="text-sm opacity-80 mt-1">${sub.price} · {sub.daysLeft} days remaining</div>
+              <div className="font-display text-2xl font-bold">{currentPlan.tier} Plan</div>
+              <div className="text-sm opacity-80 mt-1">${currentPlan.price} · {daysLeft} days remaining</div>
             </div>
             <div className="p-3 bg-white/15 rounded-xl">
               <CreditCard className="w-6 h-6" />
@@ -41,7 +45,7 @@ export default function FamilySubscription() {
           <div className="mb-5">
             <div className="flex justify-between text-xs opacity-75 mb-1.5">
               <span>Time remaining</span>
-              <span>{sub.daysLeft} / 60 days</span>
+              <span>{daysLeft} / {currentPlan.durationDays} days</span>
             </div>
             <div className="h-2 bg-white/20 rounded-full overflow-hidden">
               <div
@@ -54,11 +58,11 @@ export default function FamilySubscription() {
           <div className="flex flex-wrap gap-3">
             <div className="flex items-center gap-1.5 text-sm opacity-90">
               <ShieldCheck className="w-4 h-4" />
-              <span>{sub.contactsUnlocked} contacts unlocked</span>
+              <span>{currentPlan.tier} plan features</span>
             </div>
             <div className="flex items-center gap-1.5 text-sm opacity-90">
               <Calendar className="w-4 h-4" />
-              <span>Renews {new Date(sub.endDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+              <span>Expires {expiryDate}</span>
             </div>
           </div>
         </div>
@@ -81,11 +85,11 @@ export default function FamilySubscription() {
       )}
 
       {/* Features */}
-      {sub.status === 'active' && (
+      {hasActiveSubscription && features.length > 0 && (
         <div className={`rounded-2xl border p-5 ${isDark ? 'bg-void-light border-void-border' : 'bg-white border-light-border'}`}>
           <h3 className={`font-display font-semibold mb-4 ${isDark ? 'text-ink' : 'text-light-text'}`}>Included in your plan</h3>
           <div className="space-y-3">
-            {sub.features.map((feature) => (
+            {features.map((feature) => (
               <div key={feature} className="flex items-center gap-3">
                 <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
                   <Check className="w-3 h-3 text-emerald-600" />
@@ -100,11 +104,11 @@ export default function FamilySubscription() {
       {/* Upgrade / Other Plans */}
       <div>
         <h3 className={`font-display font-semibold mb-4 ${isDark ? 'text-ink' : 'text-light-text'}`}>
-          {sub.status === 'active' ? 'Upgrade or Change Plan' : 'Choose a Plan'}
+          {hasActiveSubscription ? 'Upgrade or Change Plan' : 'Choose a Plan'}
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {CONTACT_PLANS.map((plan) => {
-            const isCurrent = plan.tier === sub.tier && sub.status === 'active';
+            const isCurrent = currentPlan?.id === plan.id && hasActiveSubscription;
             return (
               <div
                 key={plan.id}

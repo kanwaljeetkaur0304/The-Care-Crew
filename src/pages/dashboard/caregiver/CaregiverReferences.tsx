@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Award, Phone, Mail, ShieldCheck, Plus, Trash2, CheckCircle, Clock } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
-import { MOCK_REFERENCES, type Reference } from '../../../data/dashboardMockData';
+import { type Reference } from '../../../data/dashboardMockData';
 import DashboardEmptyState from '../../../components/dashboard/DashboardEmptyState';
 import DashboardBadge from '../../../components/dashboard/DashboardBadge';
 
 export default function CaregiverReferences() {
   const { isDark } = useTheme();
-  const [refs, setRefs] = useState<Reference[]>(MOCK_REFERENCES);
+  const [refs, setRefs] = useState<Reference[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [newRef, setNewRef] = useState({ name: '', relationship: '', phone: '', email: '', comment: '' });
 

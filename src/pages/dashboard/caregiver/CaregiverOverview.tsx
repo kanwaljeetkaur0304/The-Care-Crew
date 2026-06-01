@@ -8,8 +8,6 @@ import { useMessages } from '../../../context/MessagesContext';
 import { supabase, isSupabaseConfigured } from '../../../lib/supabase';
 import DashboardStatCard from '../../../components/dashboard/DashboardStatCard';
 import {
-  MOCK_REVIEWS,
-  MOCK_NOTIFICATIONS,
   type Review,
   type Notification,
 } from '../../../data/dashboardMockData';
@@ -72,7 +70,7 @@ export default function CaregiverOverview() {
   const [supabaseRating, setSupabaseRating] = useState<string | null>(null);
 
   // ── 4. Recent Reviews — live from Supabase, fallback to mock ─────────────────
-  const [recentReviews, setRecentReviews] = useState<Review[]>(MOCK_REVIEWS.slice(0, 2));
+  const [recentReviews, setRecentReviews] = useState<Review[]>([]);
 
   // ── 5. Listing status — localStorage takes precedence (same key Listing page writes) ─
   const [listingStatus] = useState<'active' | 'paused'>(() => {
@@ -150,7 +148,7 @@ export default function CaregiverOverview() {
           }));
           setRecentReviews(mapped);
         }
-        // If 0 real reviews, the default state (MOCK_REVIEWS) stays shown as demo
+        // If 0 real reviews, empty state is shown
       });
 
   }, [user]);
@@ -160,10 +158,7 @@ export default function CaregiverOverview() {
   const pendingRequests       = supabasePendingCount  ?? caregiverInbox.filter((r) => r.status === 'pending').length;
 
   // ── Derived: Avg Rating ───────────────────────────────────────────────────────
-  const mockAvgRating = MOCK_REVIEWS.length
-    ? (MOCK_REVIEWS.reduce((a, r) => a + r.rating, 0) / MOCK_REVIEWS.length).toFixed(1)
-    : '—';
-  const avgRating = supabaseRating ?? mockAvgRating;
+  const avgRating = supabaseRating ?? '—';
 
   // ── Derived: Profile Completion ───────────────────────────────────────────────
   const { score: profileCompletion, hint: completionHint } = useMemo(
@@ -213,13 +208,6 @@ export default function CaregiverOverview() {
           action: '/dashboard/contact-requests',
         });
       });
-
-    // Fill remaining slots with mock notifications (skip any already covered above)
-    const usedIds = new Set(items.map((i) => i.id));
-    for (const n of MOCK_NOTIFICATIONS) {
-      if (items.length >= 4) break;
-      if (!usedIds.has(n.id)) items.push(n);
-    }
 
     return items.slice(0, 4);
   }, [threads, caregiverInbox]);

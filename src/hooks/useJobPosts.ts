@@ -2,16 +2,16 @@
  * useJobPosts
  *
  * Returns job posts for the logged-in family user.
- * - Demo user → MOCK_JOB_POSTS (no Supabase calls).
- * - Real user → fetches from `job_posts` table where family_id = user.id.
+ * Fetches from `job_posts` table where family_id = user.id.
+ * Returns empty array when user has no posts yet.
  *
- * toggleStatus and deleteJob update local state + persist to Supabase for real users.
+ * toggleStatus and deleteJob update local state + persist to Supabase.
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { MOCK_JOB_POSTS, type JobPost } from '../data/dashboardMockData';
+import { type JobPost } from '../data/dashboardMockData';
 
 export interface UseJobPostsReturn {
   jobs: JobPost[];
@@ -21,15 +21,13 @@ export interface UseJobPostsReturn {
   addJob: (job: Omit<JobPost, 'id' | 'postedDate' | 'applicants' | 'views'>) => Promise<void>;
 }
 
-const DEMO_ID = 'demo-user';
-
 export function useJobPosts(): UseJobPostsReturn {
   const { user } = useAuth();
-  const [jobs, setJobs] = useState<JobPost[]>(MOCK_JOB_POSTS);
+  const [jobs, setJobs] = useState<JobPost[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (!user || user.id === DEMO_ID || !isSupabaseConfigured) return;
+    if (!user || !isSupabaseConfigured) return;
 
     setIsLoading(true);
 
@@ -65,7 +63,7 @@ export function useJobPosts(): UseJobPostsReturn {
           };
         });
 
-        setJobs(mapped.length > 0 ? mapped : MOCK_JOB_POSTS);
+        setJobs(mapped);
       });
   }, [user]);
 
@@ -82,7 +80,7 @@ export function useJobPosts(): UseJobPostsReturn {
         return updated;
       });
 
-      if (!user || user.id === DEMO_ID || !isSupabaseConfigured) return;
+      if (!user || !isSupabaseConfigured) return;
 
       await supabase
         .from('job_posts')
@@ -97,7 +95,7 @@ export function useJobPosts(): UseJobPostsReturn {
     async (id: string) => {
       setJobs((prev) => prev.filter((j) => j.id !== id));
 
-      if (!user || user.id === DEMO_ID || !isSupabaseConfigured) return;
+      if (!user || !isSupabaseConfigured) return;
 
       await supabase
         .from('job_posts')
@@ -119,7 +117,7 @@ export function useJobPosts(): UseJobPostsReturn {
       };
       setJobs((prev) => [newJob, ...prev]);
 
-      if (!user || user.id === DEMO_ID || !isSupabaseConfigured) return;
+      if (!user || !isSupabaseConfigured) return;
 
       const { data } = await supabase
         .from('job_posts')
@@ -139,7 +137,6 @@ export function useJobPosts(): UseJobPostsReturn {
         .select('id')
         .single();
 
-      // Replace the local temp ID with the real Supabase UUID
       if (data?.id) {
         setJobs((prev) =>
           prev.map((j) => (j.id === newJob.id ? { ...j, id: data.id } : j))
