@@ -187,20 +187,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         if (data.session && data.user) {
-          // Immediately set user from registration data — no DB round-trip
-          setUser({ id: data.user.id, name, email, role });
-
-          // Save phone + location to the appropriate profile table (fire-and-forget)
+          // Save phone + location BEFORE signing out (needs active session for RLS)
           const table = role === 'family' ? 'family_profiles' : 'caregiver_profiles';
           const profileRow: Record<string, unknown> = { id: data.user.id };
           if (phone)    profileRow.phone    = phone;
           if (location) profileRow.location = location;
           if (phone || location) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            supabase.from(table).upsert(profileRow as any).then(({ error: e }) => {
-              if (e) console.warn('Profile save after register:', e.message);
-            });
+            const { error: e } = await supabase.from(table).upsert(profileRow as any);
+            if (e) console.warn('Profile save after register:', e.message);
           }
+
+          // Sign out immediately — registration must NOT create an automatic session.
+          // The user is shown a success screen and must sign in manually.
+          await supabase.auth.signOut();
 
           return { ok: true };
         }

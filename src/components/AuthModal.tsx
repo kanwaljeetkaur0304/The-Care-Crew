@@ -176,7 +176,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
         setTimeout(() => {
           setSuccess(false);
           onClose();
-          navigate('/dashboard');
+          navigate('/');
         }, 900);
       } else {
         setError(result.error ?? 'Invalid email or password');
@@ -282,13 +282,13 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
               </div>
 
               {mode === 'login' ? (
-                /* Login success — auto-redirecting */
+                /* Login success — auto-redirecting to homepage */
                 <>
                   <h4 className={`font-display text-2xl font-semibold mb-2 ${isDark ? 'text-ink' : 'text-light-text'}`}>
                     Signed in!
                   </h4>
                   <p className={`text-sm ${isDark ? 'text-ink-muted' : 'text-light-text-muted'}`}>
-                    Redirecting you to your dashboard…
+                    Welcome back! Taking you to the homepage…
                   </p>
                 </>
               ) : (
