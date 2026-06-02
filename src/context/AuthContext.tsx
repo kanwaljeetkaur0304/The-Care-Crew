@@ -174,13 +174,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setIsLoading(true);
       try {
-        const { data, error } = await supabase.auth.signUp({
+        // Race: signUp vs 20-second timeout — same pattern as login()
+        const signUpPromise = supabase.auth.signUp({
           email,
           password,
           options: {
             data: { full_name: name, role, phone: phone ?? null, location: location ?? null },
           },
         });
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('timeout')), 20_000)
+        );
+
+        let data: Awaited<ReturnType<typeof supabase.auth.signUp>>['data'];
+        let error: Awaited<ReturnType<typeof supabase.auth.signUp>>['error'];
+
+        try {
+          ({ data, error } = await Promise.race([signUpPromise, timeoutPromise]));
+        } catch (raceErr) {
+          // Timeout — signUp may have succeeded in the background and created a
+          // session in localStorage. Sign out immediately to prevent auto-login.
+          supabase.auth.signOut().catch(() => {});
+          return {
+            ok: false,
+            error: 'Registration is taking too long — your connection may be slow. Please try again.',
+          };
+        }
 
         if (error) {
           return { ok: false, error: mapAuthError(error.message) };
